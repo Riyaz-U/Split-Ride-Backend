@@ -1,13 +1,13 @@
 ### GET request to example server
-GET http://localhost:8080/api/ride-intents
+POST http://localhost:8080/api/ride-intents
 content-type: application/json
 
 {
-  "userId": "some",
+  "userId": "48b7ee6d-8f7c-4056-89c3-85557237bce4",
   "direction": "HOME_TO_OFFICE",
   "sourceArea": "DLF",
   "destinationArea": "TECH park",
-  "startTime": "2025-12-13T14:12:45.123456Z",
+  "startTime": "2026-01-13T14:12:45.123456Z",
   "flexibleMinutes": 10
 }
 

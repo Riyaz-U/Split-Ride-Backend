@@ -8,5 +8,5 @@ import java.util.UUID
 
 @Repository
 interface RideIntentRepository: JpaRepository<RideIntent, UUID>{
-    fun findAllByDirection(direction: Direction): List<RideIntent>?
+    fun findAllByDirection(direction: Direction): List<RideIntent>
 }

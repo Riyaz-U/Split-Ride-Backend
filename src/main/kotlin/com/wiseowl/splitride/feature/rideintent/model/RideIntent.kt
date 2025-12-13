@@ -32,6 +32,12 @@ data class RideIntent(
     val destinationArea: String,
 
     @Column(nullable = false)
+    val normalizedSource: String,
+
+    @Column(nullable = false)
+    val normalizedDestination: String,
+
+    @Column(nullable = false)
     val startTime: Instant,
 
     @Column(nullable = false)
@@ -43,7 +49,21 @@ data class RideIntent(
 
     @Column(nullable = false)
     val createdAt: Instant = Instant.now()
-)
+){
+    constructor() : this(
+        id = null,
+        userId = UUID.randomUUID(),
+        direction = Direction.HOME_TO_OFFICE,
+        sourceArea = "",
+        destinationArea = "",
+        normalizedSource = "",
+        normalizedDestination = "",
+        startTime = Instant.now(),
+        flexibleMinutes = 0,
+        status = RideIntentStatus.ACTIVE,
+        createdAt = Instant.now()
+    )
+}
 
 enum class Direction { HOME_TO_OFFICE, OFFICE_TO_HOME }
 

@@ -8,10 +8,12 @@ import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
+import kotlin.math.abs
 
 @Service
 class RideIntentService(
-    private val rideIntentRepository: RideIntentRepository
+    private val rideIntentRepository: RideIntentRepository,
+    private val areaNormalizer: AreaNormalizer
 ) {
 
     fun create(req: CreateRideIntentRequestDTO): RideIntent {
@@ -20,6 +22,8 @@ class RideIntentService(
             direction = req.direction,
             sourceArea = req.sourceArea,
             destinationArea = req.destinationArea,
+            normalizedSource = areaNormalizer.normalize(req.sourceArea),
+            normalizedDestination = areaNormalizer.normalize(req.destinationArea),
             startTime = Instant.parse(req.startTime),
             flexibleMinutes = req.flexibleMinutes
         )
@@ -32,13 +36,16 @@ class RideIntentService(
         destinationArea: String,
         time: String
     ): List<RideIntent> {
+        val normSource = areaNormalizer.normalize(sourceArea)
+        val normDest = areaNormalizer.normalize(destinationArea)
+        val requestedTime = Instant.parse(time)
 
         return rideIntentRepository.findAllByDirection(direction)
-            ?.filter {
-                it.sourceArea.equals(sourceArea, ignoreCase = true) &&
-                        it.destinationArea.equals(destinationArea, ignoreCase = true) &&
+            .filter {
+                it.normalizedSource == normSource &&
+                        it.normalizedDestination == normDest &&
                         it.status == RideIntentStatus.ACTIVE &&
-                        kotlin.math.abs(it.startTime.epochSecond - Instant.parse(time).epochSecond) <= it.flexibleMinutes * 60
-            }.orEmpty()
+                        abs(it.startTime.epochSecond - requestedTime.epochSecond) <= it.flexibleMinutes * 60
+            }
     }
 }
