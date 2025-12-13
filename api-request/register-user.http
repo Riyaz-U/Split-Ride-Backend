@@ -1,0 +1,15 @@
+### GET request to example server
+POST http://localhost:8080/api/users
+content-type: application/json
+
+{
+    "firstName": "Riyaz",
+    "lastName": "Uddin",
+    "email": "riyazps0007@gmail.com",
+    "password": "dummypass",
+    "company": "DO",
+    "homeArea": "rani bagh",
+    "officeArea": "mcg"
+}
+
+###
