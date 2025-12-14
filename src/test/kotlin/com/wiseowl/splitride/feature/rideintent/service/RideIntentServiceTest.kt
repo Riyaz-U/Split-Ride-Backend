@@ -33,18 +33,18 @@
         val sourceArea = "cyber city"
         val destinationArea = "cyber park"
         val sourceLat = 28.6315
-        val sourceLng = 77.2167
-        val destinationLat = 28.6517
-        val destinationLng = 77.1906
+        val sourceLng = 77.2090
+        val destinationLat = 28.6225
+        val destinationLng = 77.2210
         private val createRideIntentDTO: CreateRideIntentRequestDTO = CreateRideIntentRequestDTO(
             "48b7ee6d-8f7c-4056-89c3-85557237bce4",
             Direction.HOME_TO_OFFICE,
             sourceArea,
             destinationArea,
-            sourceLat,
-            sourceLng,
-            destinationLat,
-            destinationLng,
+            sourceLat = sourceLat,
+            sourceLng = sourceLng,
+            destinationLat = destinationLat,
+            destinationLng = destinationLng,
             Instant.now().toString(),
             10
         )
@@ -92,11 +92,11 @@
                 Direction.HOME_TO_OFFICE,
                 sourceArea = sourceArea,
                 destinationArea = destinationArea,
-                sourceLat,
-                sourceLng,
-                destinationLat,
-                destinationLng,
-                Instant.now().toString()
+                sourceLat = sourceLat,
+                sourceLng = sourceLng,
+                destinationLat = destinationLat,
+                destinationLng = destinationLng,
+                time = Instant.now().toString()
             )
 
             kotlin.test.assertEquals(1, result.size)

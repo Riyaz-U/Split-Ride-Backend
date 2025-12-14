@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
 import kotlin.math.abs
+import kotlin.math.min
 
 private const val MATCH_BOUND_DISTANCE_KM = 0.5
 
@@ -70,8 +71,9 @@ class RideIntentService(
                 val isSourceWithinBound = geoCalculator.distanceInKm(sourceLat, sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
                 val isDestinationWithinBound = geoCalculator.distanceInKm(destinationLat, destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
                 val storedAngle = geoCalculator.angle(it.sourceLat, it.sourceLng, it.destinationLat, it.destinationLng)
-                val inputAngle = geoCalculator.angle(it.destinationLat, it.destinationLng, it.destinationLat, it.destinationLng)
-                val angleDeviation = abs(storedAngle - inputAngle)
+                val inputAngle = geoCalculator.angle(sourceLat, sourceLng, destinationLat, destinationLng)
+                val rawDiff = abs(storedAngle - inputAngle)
+                val angleDeviation = min(rawDiff, 360 - rawDiff)
                 val directionAligned = angleDeviation <= 30
 
                 it.status == RideIntentStatus.ACTIVE &&
