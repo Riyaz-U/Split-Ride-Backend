@@ -5,8 +5,8 @@ content-type: application/json
 {
   "userId": "48b7ee6d-8f7c-4056-89c3-85557237bce4",
   "direction": "HOME_TO_OFFICE",
-  "sourceArea": "DLF",
-  "destinationArea": "TECH park",
+  "sourceArea": "DLF CyberHub",
+  "destinationArea": "Tech Park",
   "startTime": "2026-01-13T14:12:45.123456Z",
   "flexibleMinutes": 10
 }

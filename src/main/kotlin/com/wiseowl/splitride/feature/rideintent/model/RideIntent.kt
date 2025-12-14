@@ -38,6 +38,12 @@ data class RideIntent(
     val normalizedDestination: String,
 
     @Column(nullable = false)
+    val sourceKeywords: String,
+
+    @Column(nullable = false)
+    val destinationKeywords: String,
+
+    @Column(nullable = false)
     val startTime: Instant,
 
     @Column(nullable = false)
@@ -58,6 +64,8 @@ data class RideIntent(
         destinationArea = "",
         normalizedSource = "",
         normalizedDestination = "",
+        sourceKeywords = "",
+        destinationKeywords = "",
         startTime = Instant.now(),
         flexibleMinutes = 0,
         status = RideIntentStatus.ACTIVE,
