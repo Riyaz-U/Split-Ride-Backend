@@ -26,12 +26,20 @@ class RideIntentController(private val service: RideIntentService) {
         @RequestParam direction: Direction,
         @RequestParam sourceArea: String,
         @RequestParam destinationArea: String,
+        @RequestParam sourceLat: Double,
+        @RequestParam sourceLng: Double,
+        @RequestParam destinationLat: Double,
+        @RequestParam destinationLng: Double,
         @RequestParam time: String
     ): List<RideIntentResponseDTO> {
         return service.search(
             direction,
             sourceArea,
             destinationArea,
+            sourceLat,
+            sourceLng,
+            destinationLat,
+            destinationLng,
             time
         ).map { it.toDTO() }
     }

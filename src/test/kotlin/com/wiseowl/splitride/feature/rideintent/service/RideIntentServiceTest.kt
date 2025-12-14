@@ -5,11 +5,11 @@
     import com.wiseowl.splitride.feature.rideintent.model.RideIntent
     import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
     import com.wiseowl.splitride.feature.rideintent.util.AreaNormalizer
+    import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
     import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
     import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
     import org.junit.jupiter.api.Assertions.assertTrue
     import org.mockito.Mock
-    import org.mockito.InjectMocks
     import org.junit.jupiter.api.BeforeEach
     import org.junit.jupiter.api.extension.ExtendWith
     import org.mockito.BDDMockito.given
@@ -25,16 +25,26 @@
         val keywordExtractor = KeywordExtractor()
         val areaNormalizer = AreaNormalizer()
         val keywordMatcher = KeywordMatcher(areaNormalizer, keywordExtractor)
+        val geoDistanceCalculator = GeoCalculator()
+
         @Mock lateinit var repo: RideIntentRepository
         lateinit var service: RideIntentService
 
         val sourceArea = "cyber city"
         val destinationArea = "cyber park"
+        val sourceLat = 28.6315
+        val sourceLng = 77.2167
+        val destinationLat = 28.6517
+        val destinationLng = 77.1906
         private val createRideIntentDTO: CreateRideIntentRequestDTO = CreateRideIntentRequestDTO(
             "48b7ee6d-8f7c-4056-89c3-85557237bce4",
             Direction.HOME_TO_OFFICE,
             sourceArea,
             destinationArea,
+            sourceLat,
+            sourceLng,
+            destinationLat,
+            destinationLng,
             Instant.now().toString(),
             10
         )
@@ -51,6 +61,10 @@
             destinationArea = destinationArea,
             normalizedSource = normalizedSource,
             normalizedDestination = normalizedDestination,
+            sourceLat = sourceLat,
+            sourceLng = sourceLng,
+            destinationLat = destinationLat,
+            destinationLng = destinationLng,
             sourceKeywords = sourceKeywords.joinToString(","),
             destinationKeywords = destinationKeywords.joinToString(","),
             startTime = Instant.now(),
@@ -63,7 +77,8 @@
                 repo,
                 areaNormalizer,
                 keywordExtractor,
-                keywordMatcher
+                keywordMatcher,
+                geoDistanceCalculator
             )
             given(repo.findAllByDirection(any()))
                 .willReturn(listOf(rideIntent))
@@ -77,6 +92,10 @@
                 Direction.HOME_TO_OFFICE,
                 sourceArea = sourceArea,
                 destinationArea = destinationArea,
+                sourceLat,
+                sourceLng,
+                destinationLat,
+                destinationLng,
                 Instant.now().toString()
             )
 
@@ -86,9 +105,13 @@
         @Test
         fun `search ride intent with no matching return empty`() {
             val result = service.search(
-                Direction.HOME_TO_OFFICE,
-                "some not matching",
+                Direction.OFFICE_TO_HOME,
+                sourceArea,
                 destinationArea,
+                sourceLat+0.1,
+                sourceLng+0.1,
+                destinationLat,
+                destinationLng,
                 Instant.now().toString()
             )
             assertTrue(result.isEmpty())
@@ -96,14 +119,17 @@
 
         @Test
         fun `search ride intent with matching return ride intent`() {
-            //service.create(createRideIntentDTO)
             val result = service.search(
                 Direction.HOME_TO_OFFICE,
                 sourceArea = sourceArea,
                 destinationArea = destinationArea,
+                sourceLat,
+                sourceLng,
+                destinationLat,
+                destinationLng,
                 Instant.now().toString()
             )
 
-            kotlin.test.assertTrue(result.isNotEmpty())
+            assertTrue(result.isNotEmpty())
         }
     }

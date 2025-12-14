@@ -6,6 +6,7 @@ import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
 import com.wiseowl.splitride.feature.rideintent.util.AreaNormalizer
+import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
 import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
 import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
 import org.springframework.stereotype.Service
@@ -13,12 +14,15 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.math.abs
 
+private const val MATCH_BOUND_DISTANCE_KM = 0.5
+
 @Service
 class RideIntentService(
     private val rideIntentRepository: RideIntentRepository,
     private val areaNormalizer: AreaNormalizer,
     private val keywordExtractor: KeywordExtractor,
-    private val keywordMatcher: KeywordMatcher
+    private val keywordMatcher: KeywordMatcher,
+    private val geoCalculator: GeoCalculator
 ) {
 
     fun create(req: CreateRideIntentRequestDTO): RideIntent {
@@ -33,6 +37,10 @@ class RideIntentService(
             destinationArea = req.destinationArea,
             normalizedSource = normalizedSource,
             normalizedDestination = normalizedDestination,
+            sourceLat = req.sourceLat,
+            sourceLng = req.sourceLat,
+            destinationLat = req.destinationLat,
+            destinationLng = req.destinationLng,
             sourceKeywords = sourceKeyword,
             destinationKeywords = destinationKeyword,
             startTime = Instant.parse(req.startTime),
@@ -45,6 +53,10 @@ class RideIntentService(
         direction: Direction,
         sourceArea: String,
         destinationArea: String,
+        sourceLat: Double,
+        sourceLng: Double,
+        destinationLat: Double,
+        destinationLng: Double,
         time: String
     ): List<RideIntent> {
         val normSource = areaNormalizer.normalize(sourceArea)
@@ -55,9 +67,19 @@ class RideIntentService(
             .filter {
                 val sourceAreaScore = keywordMatcher.getScore(normSource, it.sourceKeywords.split(",").toSet())
                 val destinationAreaScore = keywordMatcher.getScore(normDest, it.destinationKeywords.split(",").toSet())
+                val isSourceWithinBound = geoCalculator.distanceInKm(sourceLat, sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
+                val isDestinationWithinBound = geoCalculator.distanceInKm(destinationLat, destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
+                val storedAngle = geoCalculator.angle(it.sourceLat, it.sourceLng, it.destinationLat, it.destinationLng)
+                val inputAngle = geoCalculator.angle(it.destinationLat, it.destinationLng, it.destinationLat, it.destinationLng)
+                val angleDeviation = abs(storedAngle - inputAngle)
+                val directionAligned = angleDeviation <= 30
+
                 it.status == RideIntentStatus.ACTIVE &&
                         sourceAreaScore >= 0.4f &&
                         destinationAreaScore >= 0.4f &&
+                        isSourceWithinBound &&
+                        isDestinationWithinBound &&
+                        directionAligned &&
                         abs(it.startTime.epochSecond - requestedTime.epochSecond) <= it.flexibleMinutes * 60
             }
     }

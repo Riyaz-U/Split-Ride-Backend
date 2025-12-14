@@ -7,6 +7,10 @@ data class CreateRideIntentRequestDTO(
     val direction: Direction,
     val sourceArea: String,
     val destinationArea: String,
+    val sourceLat: Double,
+    val sourceLng: Double,
+    val destinationLat: Double,
+    val destinationLng: Double,
     val startTime: String,  // ISO format
     val flexibleMinutes: Int
 )
