@@ -68,9 +68,9 @@ data class RideIntent(
     @Column(nullable = false)
     val createdAt: Instant = Instant.now()
 ){
-    constructor() : this(
+    protected constructor() : this(
         id = null,
-        userId = UUID.randomUUID(),
+        userId = UUID(0,0),
         direction = Direction.HOME_TO_OFFICE,
         sourceArea = "",
         destinationArea = "",
@@ -82,10 +82,10 @@ data class RideIntent(
         destinationLng = 0.0,
         sourceKeywords = "",
         destinationKeywords = "",
-        startTime = Instant.now(),
+        startTime = Instant.EPOCH,
         flexibleMinutes = 0,
         status = RideIntentStatus.ACTIVE,
-        createdAt = Instant.now()
+        createdAt = Instant.EPOCH
     )
 }
 

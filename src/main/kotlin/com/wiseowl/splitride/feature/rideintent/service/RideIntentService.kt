@@ -39,7 +39,7 @@ class RideIntentService(
             normalizedSource = normalizedSource,
             normalizedDestination = normalizedDestination,
             sourceLat = req.sourceLat,
-            sourceLng = req.sourceLat,
+            sourceLng = req.sourceLng,
             destinationLat = req.destinationLat,
             destinationLng = req.destinationLng,
             sourceKeywords = sourceKeyword,
