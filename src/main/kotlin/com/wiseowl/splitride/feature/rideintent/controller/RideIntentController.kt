@@ -1,6 +1,8 @@
 package com.wiseowl.splitride.feature.rideintent.controller
 
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
+import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupRequestDTO
+import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.toDTO
 import com.wiseowl.splitride.feature.rideintent.model.Direction
@@ -42,5 +44,12 @@ class RideIntentController(private val service: RideIntentService) {
             destinationLng,
             time
         ).map { it.toDTO() }
+    }
+
+    @PostMapping("api/ride-groups/join")
+    fun joinGroup(
+        @RequestBody joinGroupRequestDTO: JoinGroupRequestDTO
+    ): JoinGroupResponseDTO {
+        return service.joinGroup(joinGroupRequestDTO)
     }
 }

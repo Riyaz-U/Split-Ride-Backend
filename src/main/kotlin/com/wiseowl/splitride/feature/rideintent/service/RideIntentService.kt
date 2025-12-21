@@ -1,9 +1,15 @@
 package com.wiseowl.splitride.feature.rideintent.service
 
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
+import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupRequestDTO
+import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
 import com.wiseowl.splitride.feature.rideintent.model.Direction
+import com.wiseowl.splitride.feature.rideintent.model.RideGroup
+import com.wiseowl.splitride.feature.rideintent.model.RideGroupMember
 import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
+import com.wiseowl.splitride.feature.rideintent.repository.RideGroupMemberRepository
+import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
 import com.wiseowl.splitride.feature.rideintent.util.AreaNormalizer
 import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
@@ -20,6 +26,8 @@ private const val MATCH_BOUND_DISTANCE_KM = 0.5
 @Service
 class RideIntentService(
     private val rideIntentRepository: RideIntentRepository,
+    private val rideGroupRepository: RideGroupRepository,
+    private val rideGroupMemberRepository: RideGroupMemberRepository,
     private val areaNormalizer: AreaNormalizer,
     private val keywordExtractor: KeywordExtractor,
     private val keywordMatcher: KeywordMatcher,
@@ -84,5 +92,40 @@ class RideIntentService(
                         directionAligned &&
                         abs(it.startTime.epochSecond - requestedTime.epochSecond) <= it.flexibleMinutes * 60
             }
+    }
+
+    fun joinGroup(
+        req: JoinGroupRequestDTO
+    ): JoinGroupResponseDTO {
+        val availableGroup = rideGroupRepository.findAll().first {
+            val isSourceWithinBound = geoCalculator.distanceInKm(req.sourceLat, req.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
+            val isDestinationWithinBound = geoCalculator.distanceInKm(req.destinationLat, req.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
+            val isSpaceAvailable = it.occupancy < it.maxSize
+            val isStartTimeWithinBound = with(Instant.parse(req.time)){
+                it.startTimeBucket.epochSecond > epochSecond
+                        && abs(it.startTimeBucket.epochSecond - epochSecond) < 10 * 60
+            }
+            isSourceWithinBound && isDestinationWithinBound && isStartTimeWithinBound && isSpaceAvailable
+        }
+        val updatedGroup = availableGroup?.copy(occupancy = availableGroup.occupancy+1) ?: RideGroup(
+            direction = req.direction,
+            sourceLat = req.sourceLat,
+            sourceLng = req.sourceLng,
+            destinationLat = req.destinationLat,
+            destinationLng = req.destinationLng,
+            startTimeBucket = Instant.parse(req.time),
+            occupancy = 1
+        )
+        rideGroupRepository.save(updatedGroup)
+
+        val newMember = RideGroupMember(rideGroupId = updatedGroup.id!!, rideIntentId = req.rideIntentId)
+        rideGroupMemberRepository.save(newMember)
+        val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(updatedGroup.id)
+
+        return JoinGroupResponseDTO(
+            rideGroupId = updatedGroup.id,
+            currentMembers = allMemberForGroup,
+            isGroupFull = updatedGroup.occupancy >= updatedGroup.maxSize
+        )
     }
 }
