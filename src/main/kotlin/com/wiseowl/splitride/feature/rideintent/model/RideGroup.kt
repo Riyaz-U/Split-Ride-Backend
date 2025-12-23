@@ -39,8 +39,17 @@ data class RideGroup(
     val maxSize: Int = 3,
 
     @Column(nullable = false)
-    val occupancy: Int = 0,
-
-    @Column(nullable = false)
     val createdAt: Instant = Instant.now()
-)
+){
+    constructor(): this(
+        id = null,
+        direction = Direction.HOME_TO_OFFICE,
+        sourceLat = 0.0,
+        sourceLng = 0.0,
+        destinationLat = 0.0,
+        destinationLng = 0.0,
+        startTimeBucket = Instant.now(),
+        maxSize = 3,
+        createdAt = Instant.now()
+    )
+}

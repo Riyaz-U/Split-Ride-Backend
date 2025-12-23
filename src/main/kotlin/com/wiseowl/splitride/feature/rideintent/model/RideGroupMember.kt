@@ -25,4 +25,11 @@ data class RideGroupMember(
 
     @Column(nullable = false)
     val joinedAt: Instant = Instant.now()
-)
+){
+    protected constructor() : this(
+        id = null,
+        rideGroupId = UUID(0,0),
+        rideIntentId = UUID(0,0),
+        joinedAt = Instant.EPOCH
+    )
+}

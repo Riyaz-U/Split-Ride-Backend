@@ -1,8 +1,8 @@
 package com.wiseowl.splitride.feature.rideintent.service
 
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
-import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupRequestDTO
 import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
+import com.wiseowl.splitride.feature.rideintent.dto.RideGroupMemberDTO
 import com.wiseowl.splitride.feature.rideintent.model.Direction
 import com.wiseowl.splitride.feature.rideintent.model.RideGroup
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupMember
@@ -15,6 +15,9 @@ import com.wiseowl.splitride.feature.rideintent.util.AreaNormalizer
 import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
 import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
 import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
+import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
+import jakarta.transaction.Transactional
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
@@ -31,7 +34,8 @@ class RideIntentService(
     private val areaNormalizer: AreaNormalizer,
     private val keywordExtractor: KeywordExtractor,
     private val keywordMatcher: KeywordMatcher,
-    private val geoCalculator: GeoCalculator
+    private val geoCalculator: GeoCalculator,
+    private val timerBucket: TimerBucket,
 ) {
 
     fun create(req: CreateRideIntentRequestDTO): RideIntent {
@@ -94,38 +98,46 @@ class RideIntentService(
             }
     }
 
+    fun getGroup(id: UUID): RideGroup{
+        return rideGroupRepository.findById(id).get()
+    }
+
+    @Transactional
     fun joinGroup(
-        req: JoinGroupRequestDTO
+        rideIntentId: UUID
     ): JoinGroupResponseDTO {
-        val availableGroup = rideGroupRepository.findAll().first {
-            val isSourceWithinBound = geoCalculator.distanceInKm(req.sourceLat, req.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
-            val isDestinationWithinBound = geoCalculator.distanceInKm(req.destinationLat, req.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
-            val isSpaceAvailable = it.occupancy < it.maxSize
-            val isStartTimeWithinBound = with(Instant.parse(req.time)){
-                it.startTimeBucket.epochSecond > epochSecond
-                        && abs(it.startTimeBucket.epochSecond - epochSecond) < 10 * 60
-            }
-            isSourceWithinBound && isDestinationWithinBound && isStartTimeWithinBound && isSpaceAvailable
+        val rideIntent = rideIntentRepository.findByIdOrNull(rideIntentId)
+            ?: throw IllegalArgumentException("RideIntent not found")
+
+        val availableGroup = rideGroupRepository.findByDirectionAndStartTimeBucket(
+            rideIntent.direction,
+            timerBucket.get(rideIntent.startTime)
+        ).firstOrNull {
+            val isSourceWithinBound = geoCalculator.distanceInKm(rideIntent.sourceLat, rideIntent.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
+            val isDestinationWithinBound = geoCalculator.distanceInKm(rideIntent.destinationLat, rideIntent.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
+            val occupancy = rideGroupMemberRepository.findAllByRideGroupId(it.id!!).size
+            val isSpaceAvailable = occupancy < it.maxSize
+            isSourceWithinBound && isDestinationWithinBound && isSpaceAvailable
         }
-        val updatedGroup = availableGroup?.copy(occupancy = availableGroup.occupancy+1) ?: RideGroup(
-            direction = req.direction,
-            sourceLat = req.sourceLat,
-            sourceLng = req.sourceLng,
-            destinationLat = req.destinationLat,
-            destinationLng = req.destinationLng,
-            startTimeBucket = Instant.parse(req.time),
-            occupancy = 1
+        val updatedGroup = availableGroup ?: RideGroup(
+            direction = rideIntent.direction,
+            sourceLat = rideIntent.sourceLat,
+            sourceLng = rideIntent.sourceLng,
+            destinationLat = rideIntent.destinationLat,
+            destinationLng = rideIntent.destinationLng,
+            startTimeBucket = timerBucket.get(rideIntent.startTime)
         )
         rideGroupRepository.save(updatedGroup)
 
-        val newMember = RideGroupMember(rideGroupId = updatedGroup.id!!, rideIntentId = req.rideIntentId)
+        val newMember = RideGroupMember(rideGroupId = updatedGroup.id!!, rideIntentId = rideIntent.id!!)
         rideGroupMemberRepository.save(newMember)
         val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(updatedGroup.id)
 
+        val isGroupFull = rideGroupMemberRepository.findAllByRideGroupId(updatedGroup.id).size >= updatedGroup.maxSize
         return JoinGroupResponseDTO(
             rideGroupId = updatedGroup.id,
-            currentMembers = allMemberForGroup,
-            isGroupFull = updatedGroup.occupancy >= updatedGroup.maxSize
+            currentMembers = allMemberForGroup.map { RideGroupMemberDTO(it.id, it.rideIntentId, it.joinedAt) },
+            isGroupFull = isGroupFull
         )
     }
 }
