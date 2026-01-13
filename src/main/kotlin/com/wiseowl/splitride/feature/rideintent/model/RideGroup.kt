@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import java.time.Instant
 import java.util.UUID
 
@@ -42,7 +43,6 @@ data class RideGroup(
     val createdAt: Instant = Instant.now()
 ){
     constructor(): this(
-        id = null,
         direction = Direction.HOME_TO_OFFICE,
         sourceLat = 0.0,
         sourceLng = 0.0,

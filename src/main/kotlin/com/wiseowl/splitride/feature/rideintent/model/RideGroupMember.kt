@@ -6,11 +6,15 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.time.Instant
 import java.util.UUID
 
 @Entity
-@Table(name = "ride_group_members")
+@Table(
+    name = "ride_group_members",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["rideIntentId"])]
+)
 data class RideGroupMember(
 
     @Id

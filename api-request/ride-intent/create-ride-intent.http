@@ -3,14 +3,14 @@ POST http://localhost:8080/api/ride-intents
 content-type: application/json
 
 {
-  "userId": "48b7ee6d-8f7c-4056-89c3-85557237bce4",
+  "userId": "48b7ee6d-8f7c-4056-89c3-85557237bc21",
   "direction": "HOME_TO_OFFICE",
   "sourceArea": "DLFCyberHub",
   "destinationArea": "TechPark",
   "sourceLat": 28.684128656399093,
   "sourceLng": 77.12783392108861,
   "destinationLat": 28.683167149888778,
-  "destinationLng": 77.13595595970747,
+  "destinationLng": 78.13595595970747,
   "startTime": "2026-01-13T14:12:45.123456Z",
   "flexibleMinutes": 10
 }

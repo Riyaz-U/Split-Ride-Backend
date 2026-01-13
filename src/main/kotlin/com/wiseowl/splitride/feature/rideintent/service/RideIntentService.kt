@@ -119,7 +119,7 @@ class RideIntentService(
             val isSpaceAvailable = occupancy < it.maxSize
             isSourceWithinBound && isDestinationWithinBound && isSpaceAvailable
         }
-        val updatedGroup = availableGroup ?: RideGroup(
+        val updatedGroup: RideGroup = availableGroup ?: RideGroup(
             direction = rideIntent.direction,
             sourceLat = rideIntent.sourceLat,
             sourceLng = rideIntent.sourceLng,
@@ -127,15 +127,26 @@ class RideIntentService(
             destinationLng = rideIntent.destinationLng,
             startTimeBucket = timerBucket.get(rideIntent.startTime)
         )
-        rideGroupRepository.save(updatedGroup)
 
-        val newMember = RideGroupMember(rideGroupId = updatedGroup.id!!, rideIntentId = rideIntent.id!!)
-        rideGroupMemberRepository.save(newMember)
-        val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(updatedGroup.id)
+        val createdRideGroup = rideGroupRepository.save(updatedGroup)
 
-        val isGroupFull = rideGroupMemberRepository.findAllByRideGroupId(updatedGroup.id).size >= updatedGroup.maxSize
+        val rideGroupMember = rideGroupMemberRepository
+            .findByRideGroupIdAndRideIntentId(
+                createdRideGroup.id!!
+                , rideIntent.id!!
+            )
+        val alreadyJoined = rideGroupMember!=null
+
+        if (!alreadyJoined) {
+            val newMember = RideGroupMember(rideGroupId = createdRideGroup.id, rideIntentId = rideIntent.id)
+            rideGroupMemberRepository.save(newMember)
+        }
+
+        val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(createdRideGroup.id)
+        val isGroupFull = rideGroupMemberRepository.findAllByRideGroupId(createdRideGroup.id).size >= updatedGroup.maxSize
+
         return JoinGroupResponseDTO(
-            rideGroupId = updatedGroup.id,
+            rideGroupId = createdRideGroup.id,
             currentMembers = allMemberForGroup.map { RideGroupMemberDTO(it.id, it.rideIntentId, it.joinedAt) },
             isGroupFull = isGroupFull
         )

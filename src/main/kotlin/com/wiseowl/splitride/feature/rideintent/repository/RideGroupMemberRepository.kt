@@ -8,4 +8,5 @@ import java.util.UUID
 @Repository
 interface RideGroupMemberRepository: JpaRepository<RideGroupMember, UUID>{
     fun findAllByRideGroupId(rideGroupId: UUID): List<RideGroupMember>
+    fun findByRideGroupIdAndRideIntentId(rideGroupId: UUID, rideIntentId: UUID): RideGroupMember?
 }

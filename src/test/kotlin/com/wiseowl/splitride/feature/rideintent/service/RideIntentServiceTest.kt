@@ -8,6 +8,9 @@
     import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
     import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
     import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
+    import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
+    import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
+    import com.wiseowl.splitride.feature.rideintent.repository.RideGroupMemberRepository
     import org.junit.jupiter.api.Assertions.assertTrue
     import org.mockito.Mock
     import org.junit.jupiter.api.BeforeEach
@@ -26,8 +29,11 @@
         val areaNormalizer = AreaNormalizer()
         val keywordMatcher = KeywordMatcher(areaNormalizer, keywordExtractor)
         val geoDistanceCalculator = GeoCalculator()
+        val timerBucket = TimerBucket()
 
         @Mock lateinit var repo: RideIntentRepository
+        @Mock lateinit var rideGroupRepository: RideGroupRepository
+        @Mock lateinit var rideGroupMemberRepository: RideGroupMemberRepository
         lateinit var service: RideIntentService
 
         val sourceArea = "cyber city"
@@ -75,10 +81,13 @@
         fun setUp() {
             service = RideIntentService(
                 repo,
+                rideGroupRepository,
+                rideGroupMemberRepository,
                 areaNormalizer,
                 keywordExtractor,
                 keywordMatcher,
-                geoDistanceCalculator
+                geoDistanceCalculator,
+                timerBucket
             )
             given(repo.findAllByDirection(any()))
                 .willReturn(listOf(rideIntent))
