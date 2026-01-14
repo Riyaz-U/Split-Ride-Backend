@@ -3,9 +3,12 @@ package com.wiseowl.splitride.feature.rideintent.service
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
 import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideGroupMemberDTO
+import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
+import com.wiseowl.splitride.feature.rideintent.dto.toDTO
 import com.wiseowl.splitride.feature.rideintent.model.Direction
 import com.wiseowl.splitride.feature.rideintent.model.RideGroup
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupMember
+import com.wiseowl.splitride.feature.rideintent.model.RideGroupStatus
 import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
 import com.wiseowl.splitride.feature.rideintent.repository.RideGroupMemberRepository
@@ -17,7 +20,6 @@ import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
 import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
 import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
 import jakarta.transaction.Transactional
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
@@ -39,6 +41,10 @@ class RideIntentService(
 ) {
 
     fun create(req: CreateRideIntentRequestDTO): RideIntent {
+        val startTime = Instant.parse(req.startTime)
+        val isScheduleTimeValid = startTime.isAfter(Instant.now())
+        if(isScheduleTimeValid) throw IllegalArgumentException("Invalid start time")
+
         val normalizedSource = areaNormalizer.normalize(req.sourceArea)
         val normalizedDestination = areaNormalizer.normalize(req.destinationArea)
         val sourceKeyword = keywordExtractor.extractKeywords(normalizedSource).joinToString(",")
@@ -56,7 +62,7 @@ class RideIntentService(
             destinationLng = req.destinationLng,
             sourceKeywords = sourceKeyword,
             destinationKeywords = destinationKeyword,
-            startTime = Instant.parse(req.startTime),
+            startTime = startTime,
             flexibleMinutes = req.flexibleMinutes
         )
         return rideIntentRepository.save(intent)
@@ -84,11 +90,12 @@ class RideIntentService(
                 val isDestinationWithinBound = geoCalculator.distanceInKm(destinationLat, destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
                 val storedAngle = geoCalculator.angle(it.sourceLat, it.sourceLng, it.destinationLat, it.destinationLng)
                 val inputAngle = geoCalculator.angle(sourceLat, sourceLng, destinationLat, destinationLng)
+                val isActive = it.status == RideIntentStatus.ACTIVE
                 val rawDiff = abs(storedAngle - inputAngle)
                 val angleDeviation = min(rawDiff, 360 - rawDiff)
                 val directionAligned = angleDeviation <= 30
 
-                it.status == RideIntentStatus.ACTIVE &&
+                isActive &&
                         sourceAreaScore >= 0.4f &&
                         destinationAreaScore >= 0.4f &&
                         isSourceWithinBound &&
@@ -102,11 +109,16 @@ class RideIntentService(
         return rideGroupRepository.findById(id).get()
     }
 
+    fun getRideIntent(id: UUID): RideIntentResponseDTO{
+        val rideIntent = rideIntentRepository.findById(id).get()
+        return rideIntent.toDTO()
+    }
+
     @Transactional
     fun joinGroup(
         rideIntentId: UUID
     ): JoinGroupResponseDTO {
-        val rideIntent = rideIntentRepository.findByIdOrNull(rideIntentId)
+        val rideIntent = rideIntentRepository.findByIdAndStatus(rideIntentId, RideIntentStatus.ACTIVE)
             ?: throw IllegalArgumentException("RideIntent not found")
 
         val availableGroup = rideGroupRepository.findByDirectionAndStartTimeBucket(
@@ -115,9 +127,8 @@ class RideIntentService(
         ).firstOrNull {
             val isSourceWithinBound = geoCalculator.distanceInKm(rideIntent.sourceLat, rideIntent.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
             val isDestinationWithinBound = geoCalculator.distanceInKm(rideIntent.destinationLat, rideIntent.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
-            val occupancy = rideGroupMemberRepository.findAllByRideGroupId(it.id!!).size
-            val isSpaceAvailable = occupancy < it.maxSize
-            isSourceWithinBound && isDestinationWithinBound && isSpaceAvailable
+            val isOpen = it.status == RideGroupStatus.OPEN
+            isSourceWithinBound && isDestinationWithinBound && isOpen
         }
         val updatedGroup: RideGroup = availableGroup ?: RideGroup(
             direction = rideIntent.direction,
@@ -140,10 +151,18 @@ class RideIntentService(
         if (!alreadyJoined) {
             val newMember = RideGroupMember(rideGroupId = createdRideGroup.id, rideIntentId = rideIntent.id)
             rideGroupMemberRepository.save(newMember)
+            rideIntentRepository.save(rideIntent.copy(status = RideIntentStatus.GROUPED))
         }
 
         val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(createdRideGroup.id)
-        val isGroupFull = rideGroupMemberRepository.findAllByRideGroupId(createdRideGroup.id).size >= updatedGroup.maxSize
+        val isGroupFull = rideGroupMemberRepository.countByRideGroupId(createdRideGroup.id) >= updatedGroup.maxSize
+        if(isGroupFull){
+            rideGroupRepository.save(
+                createdRideGroup.copy(
+                    status = RideGroupStatus.FULL
+                )
+            )
+        }
 
         return JoinGroupResponseDTO(
             rideGroupId = createdRideGroup.id,

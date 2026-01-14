@@ -91,4 +91,4 @@ data class RideIntent(
 
 enum class Direction { HOME_TO_OFFICE, OFFICE_TO_HOME }
 
-enum class RideIntentStatus { ACTIVE, CANCELLED, EXPIRED }
+enum class RideIntentStatus { ACTIVE, GROUPED, CANCELLED, EXPIRED, COMPLETED }

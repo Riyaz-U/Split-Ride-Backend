@@ -40,7 +40,10 @@ data class RideGroup(
     val maxSize: Int = 3,
 
     @Column(nullable = false)
-    val createdAt: Instant = Instant.now()
+    val createdAt: Instant = Instant.now(),
+
+    @Column(nullable = false)
+    val status: RideGroupStatus = RideGroupStatus.OPEN
 ){
     constructor(): this(
         direction = Direction.HOME_TO_OFFICE,
@@ -52,4 +55,8 @@ data class RideGroup(
         maxSize = 3,
         createdAt = Instant.now()
     )
+}
+
+enum class RideGroupStatus{
+    OPEN, FULL, CLOSED, COMPLETED, CANCELLED
 }
