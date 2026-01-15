@@ -65,4 +65,13 @@ class RideIntentController(private val service: RideIntentService) {
         )
         return response
     }
+
+    @PostMapping("/{id}/cancel")
+    fun cancelRideIntent(
+        @PathVariable id: UUID,
+        @RequestParam userId: UUID //TODO: Remove when authentication is completed
+    ): SplitRideResponse<Unit>{
+        service.cancelRideIntent(id, userId)
+        return createSuccessResponse(null, HttpStatus.OK.value())
+    }
 }

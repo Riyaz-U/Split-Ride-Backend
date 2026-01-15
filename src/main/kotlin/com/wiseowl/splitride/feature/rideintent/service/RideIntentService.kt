@@ -170,4 +170,24 @@ class RideIntentService(
             isGroupFull = isGroupFull
         )
     }
+
+    fun cancelRideIntent(rideIntentId: UUID, userId: UUID): Boolean{
+        val rideIntentToCancel = rideIntentRepository.findByIdAndUserId(rideIntentId, userId)
+            ?: throw IllegalArgumentException("RideIntent not found")
+
+        when(rideIntentToCancel.status){
+            RideIntentStatus.ACTIVE -> {
+                rideIntentRepository.save(rideIntentToCancel.copy(status = RideIntentStatus.CANCELLED))
+                return true
+            }
+            RideIntentStatus.GROUPED -> {
+                rideGroupMemberRepository.deleteByRideIntentId(rideIntentId) //Exit Ride Group by deleting Ride Group Member
+                rideIntentRepository.save(rideIntentToCancel.copy(status = RideIntentStatus.CANCELLED))
+                return true
+            }
+            RideIntentStatus.CANCELLED -> throw IllegalArgumentException("RideIntent has already been cancelled")
+            RideIntentStatus.COMPLETED -> throw IllegalArgumentException("RideIntent has already been completed")
+            RideIntentStatus.EXPIRED -> throw IllegalArgumentException("RideIntent has been expired")
+        }
+    }
 }

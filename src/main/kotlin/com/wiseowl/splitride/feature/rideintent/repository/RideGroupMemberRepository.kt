@@ -10,4 +10,5 @@ interface RideGroupMemberRepository: JpaRepository<RideGroupMember, UUID>{
     fun findAllByRideGroupId(rideGroupId: UUID): List<RideGroupMember>
     fun countByRideGroupId(rideGroupId: UUID): Int
     fun findByRideGroupIdAndRideIntentId(rideGroupId: UUID, rideIntentId: UUID): RideGroupMember?
+    fun deleteByRideIntentId(rideIntentId: UUID): RideGroupMember
 }

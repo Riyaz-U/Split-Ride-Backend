@@ -12,5 +12,6 @@ import java.util.UUID
 interface RideIntentRepository: JpaRepository<RideIntent, UUID>{
     fun findAllByDirection(direction: Direction): List<RideIntent>
     fun findByIdAndStatus(id: UUID, status: RideIntentStatus): RideIntent?
+    fun findByIdAndUserId(id: UUID, userId: UUID): RideIntent?
     fun findAllByStartTimeBeforeAndStatusIs(startTime: Instant, status: RideIntentStatus): List<RideIntent>
 }
