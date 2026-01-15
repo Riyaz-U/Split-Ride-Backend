@@ -1,2 +1,2 @@
 ### POST intent concellation request
-POST http://localhost:8080/api/ride-intents/ddd026d2-bb6b-412b-8542-f0c405b200a6/cancel?userId=48b7ee6d-8f7c-4056-89c3-85557237bc21
+POST http://localhost:8080/api/ride-intents/74b28032-c3bd-46fc-b1f7-533c247b7540/cancel?userId=48b7ee6d-8f7c-4056-89c3-85557237bc21

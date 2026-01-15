@@ -42,8 +42,8 @@ class RideIntentService(
 
     fun create(req: CreateRideIntentRequestDTO): RideIntent {
         val startTime = Instant.parse(req.startTime)
-        val isScheduleTimeValid = startTime.isAfter(Instant.now())
-        if(isScheduleTimeValid) throw IllegalArgumentException("Invalid start time")
+        val startTimeHasPassed = startTime.isBefore(Instant.now())
+        if(startTimeHasPassed) throw IllegalArgumentException("Invalid start time")
 
         val normalizedSource = areaNormalizer.normalize(req.sourceArea)
         val normalizedDestination = areaNormalizer.normalize(req.destinationArea)
