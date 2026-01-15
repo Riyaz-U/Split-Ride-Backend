@@ -2,6 +2,8 @@ package com.wiseowl.splitride.feature.rideintent.service
 
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
 import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
+import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO
+import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO.Companion.toRideGroupDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideGroupMemberDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.toDTO
@@ -105,8 +107,10 @@ class RideIntentService(
             }
     }
 
-    fun getGroup(id: UUID): RideGroup{
-        return rideGroupRepository.findById(id).get()
+    fun getRideGroup(id: UUID): RideGroupDTO{
+        val rideGroup = rideGroupRepository.findRideGroupsBy(id) ?: throw IllegalArgumentException("No ride group found with id $id")
+        val membersInGroup = rideGroupMemberRepository.findAllByRideGroupId(id)
+        return rideGroup.toRideGroupDTO(membersInGroup)
     }
 
     fun getRideIntent(id: UUID): RideIntentResponseDTO{
@@ -181,7 +185,12 @@ class RideIntentService(
                 return true
             }
             RideIntentStatus.GROUPED -> {
-                rideGroupMemberRepository.deleteByRideIntentId(rideIntentId) //Exit Ride Group by deleting Ride Group Member
+                val deletedMember = rideGroupMemberRepository.deleteByRideIntentId(rideIntentId) //Exit Ride Group by deleting Ride Group Member
+                val numberOfMembersLeftInTheGroup = rideGroupMemberRepository.countByRideGroupId(deletedMember.rideGroupId)
+                if(numberOfMembersLeftInTheGroup < 2){
+                    //Cancel group
+                    rideGroupRepository.deleteById(deletedMember.rideGroupId)
+                }
                 rideIntentRepository.save(rideIntentToCancel.copy(status = RideIntentStatus.CANCELLED))
                 return true
             }

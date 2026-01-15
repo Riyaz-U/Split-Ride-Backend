@@ -1,8 +1,11 @@
 package com.wiseowl.splitride.feature.rideintent.controller
 
+import com.wiseowl.splitride.feature.response.SplitRideResponse
+import com.wiseowl.splitride.feature.response.SplitRideResponse.Companion.createSuccessResponse
 import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
-import com.wiseowl.splitride.feature.rideintent.model.RideGroup
+import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -25,7 +28,8 @@ class RideGroupController(private val service: RideIntentService) {
     @GetMapping("/info/{id}")
     fun getGroup(
         @PathVariable id: UUID
-    ): RideGroup {
-        return service.getGroup(id)
+    ): SplitRideResponse<RideGroupDTO> {
+        val response = service.getRideGroup(id)
+        return createSuccessResponse(response, status = HttpStatus.FOUND.value())
     }
 }

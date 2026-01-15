@@ -19,4 +19,6 @@ interface RideGroupRepository: JpaRepository<RideGroup, UUID>{
         currentTime: Instant,
         status: List<RideGroupStatus>
     ): List<RideGroup>
+
+    fun findRideGroupsBy(id: UUID): RideGroup
 }
