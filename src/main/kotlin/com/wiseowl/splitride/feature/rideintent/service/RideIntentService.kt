@@ -25,6 +25,7 @@ import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -118,6 +119,17 @@ class RideIntentService(
         return rideIntent.toDTO()
     }
 
+    fun getAllGroupsForUser(userId: UUID): List<RideGroup>{
+        val rideIntents = rideIntentRepository.findByUserId(userId)
+        val rideMembersForUser = rideGroupMemberRepository.findAllByRideIntentIds(rideIntents.map { it.userId })
+        val rideGroups = rideMembersForUser.map { rideGroupRepository.findById(it.rideGroupId).get() }
+        return rideGroups
+    }
+
+    fun getNearbyActiveGroups(latitude: Double, longitude: Double, radiusInMeters: Long): List<RideGroup>{
+        val nearbyGroup = rideGroupRepository.findAllByStatusAnd()
+    }
+
     @Transactional
     fun joinGroup(
         rideIntentId: UUID
@@ -198,5 +210,27 @@ class RideIntentService(
             RideIntentStatus.COMPLETED -> throw IllegalArgumentException("RideIntent has already been completed")
             RideIntentStatus.EXPIRED -> throw IllegalArgumentException("RideIntent has been expired")
         }
+    }
+
+    @Transactional
+    fun getGroups(id: UUID): Result<Boolean> {
+        val rideIntentToCancel = rideIntentRepository.findByIdAndStatus(id,RideIntentStatus.ACTIVE)
+        val groupMember = rideGroupMemberRepository.deleteByRideIntentId(id)
+        val wasGroupMember = groupMember != null
+        if(wasGroupMember){
+            val groupId = groupMember.id!!
+            val membersLeftInGroup = rideGroupMemberRepository.findAllByRideGroupId(groupId)
+            if(membersLeftInGroup.size<2) {
+                //Delete group along with member if the is only one member left
+                rideGroupMemberRepository.deleteAll(membersLeftInGroup)
+                rideGroupRepository.deleteById(groupId)
+            }
+        }
+        rideIntentRepository.save(
+            rideIntentToCancel.copy(
+                status = RideIntentStatus.CANCELLED
+            )
+        )
+        return Result.success(true)
     }
 }

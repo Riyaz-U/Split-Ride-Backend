@@ -1,1 +1,1 @@
-POST http://localhost:8080/api/ride-groups/join?rideIntentId=484c442c-fc08-471b-9570-6967301f9b05
+POST http://localhost:8080/api/ride-groups/join?rideIntentId=4d9964d6-03f4-42e3-8f0d-73f54fbadbf6

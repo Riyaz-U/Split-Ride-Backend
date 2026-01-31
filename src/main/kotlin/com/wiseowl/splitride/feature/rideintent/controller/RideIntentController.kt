@@ -8,6 +8,9 @@ import com.wiseowl.splitride.feature.rideintent.dto.toDTO
 import com.wiseowl.splitride.feature.rideintent.model.Direction
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
+import jakarta.websocket.server.PathParam
+import org.apache.coyote.Response
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
