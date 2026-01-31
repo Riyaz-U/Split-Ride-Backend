@@ -4,6 +4,7 @@ import com.wiseowl.splitride.feature.response.SplitRideResponse
 import com.wiseowl.splitride.feature.response.SplitRideResponse.Companion.createSuccessResponse
 import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO
+import com.wiseowl.splitride.feature.rideintent.model.RideGroup
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
 import org.springframework.data.repository.query.Param
@@ -34,19 +35,20 @@ class RideGroupController(private val service: RideIntentService) {
         return createSuccessResponse(response, status = HttpStatus.FOUND.value())
     }
 
-    @GetMapping("/{userId}/all}")
-    fun getUserGroups(
-        @PathVariable userId: UUID
-    ): List<RideGroup> {
-        return service.getAllGroupsForUser(userId)
+    @PostMapping("/user/all")
+    fun getGroupsByUser(
+        @RequestParam userId: UUID //TODO: Remove when authentication is completed
+    ): SplitRideResponse<List<RideGroup>>{
+        val groups = service.getGroupsByUser(userId)
+        return createSuccessResponse(groups, HttpStatus.OK.value())
     }
 
     @GetMapping("/nearby")
-    fun getUserGroups(
+    fun getNearbyGroups(
         @Param("latitude") latitude: Double,
         @Param("longitude") longitude: Double,
         @Param("radiusInMeters") radiusInMeters: Long = 650
-    ): List<RideGroup> {
-        return service.getNearbyActiveGroups(latitude, longitude, radiusInMeters)
+    ): SplitRideResponse<List<RideGroup>> {
+        return createSuccessResponse(data = service.getNearbyActiveGroups(latitude, longitude, radiusInMeters), status = HttpStatus.FOUND.value())
     }
 }

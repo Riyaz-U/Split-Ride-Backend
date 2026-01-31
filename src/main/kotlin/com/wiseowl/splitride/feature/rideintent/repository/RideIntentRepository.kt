@@ -14,4 +14,5 @@ interface RideIntentRepository: JpaRepository<RideIntent, UUID>{
     fun findByIdAndStatus(id: UUID, status: RideIntentStatus): RideIntent?
     fun findByIdAndUserId(id: UUID, userId: UUID): RideIntent?
     fun findAllByStartTimeBeforeAndStatusIs(startTime: Instant, status: RideIntentStatus): List<RideIntent>
+    fun findAllByUserId(userId: UUID): List<RideIntent>
 }

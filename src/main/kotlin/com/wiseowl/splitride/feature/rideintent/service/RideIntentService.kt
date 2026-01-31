@@ -25,7 +25,6 @@ import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
-import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -119,15 +118,12 @@ class RideIntentService(
         return rideIntent.toDTO()
     }
 
-    fun getAllGroupsForUser(userId: UUID): List<RideGroup>{
-        val rideIntents = rideIntentRepository.findByUserId(userId)
-        val rideMembersForUser = rideGroupMemberRepository.findAllByRideIntentIds(rideIntents.map { it.userId })
-        val rideGroups = rideMembersForUser.map { rideGroupRepository.findById(it.rideGroupId).get() }
-        return rideGroups
-    }
-
     fun getNearbyActiveGroups(latitude: Double, longitude: Double, radiusInMeters: Long): List<RideGroup>{
-        val nearbyGroup = rideGroupRepository.findAllByStatusAnd()
+        val nearbyGroup = rideGroupRepository.findAllByStatusOrderByStartTimeBucketAsc(RideGroupStatus.OPEN)
+            .filter {
+                geoCalculator.distanceInKm(latitude, longitude, it.sourceLat, it.sourceLng) <= radiusInMeters
+            }
+        return nearbyGroup
     }
 
     @Transactional
@@ -187,6 +183,7 @@ class RideIntentService(
         )
     }
 
+    @Transactional
     fun cancelRideIntent(rideIntentId: UUID, userId: UUID): Boolean{
         val rideIntentToCancel = rideIntentRepository.findByIdAndUserId(rideIntentId, userId)
             ?: throw IllegalArgumentException("RideIntent not found")
@@ -198,11 +195,19 @@ class RideIntentService(
             }
             RideIntentStatus.GROUPED -> {
                 val deletedMember = rideGroupMemberRepository.deleteByRideIntentId(rideIntentId) //Exit Ride Group by deleting Ride Group Member
+                val group = rideGroupRepository.findRideGroupsBy(deletedMember.rideGroupId) //Exit Ride Group by deleting Ride Group Member
                 val numberOfMembersLeftInTheGroup = rideGroupMemberRepository.countByRideGroupId(deletedMember.rideGroupId)
+                rideGroupRepository.save(
+                    when (numberOfMembersLeftInTheGroup) {
+                        0 -> group.copy(status = RideGroupStatus.CANCELLED)
+                        group.maxSize -> group.copy(status = RideGroupStatus.FULL)
+                        else -> group.copy(status = RideGroupStatus.OPEN)
+                    }
+                )
                 if(numberOfMembersLeftInTheGroup < 2){
                     //Cancel group
                     rideGroupRepository.deleteById(deletedMember.rideGroupId)
-                }
+                } else rideGroupRepository.save(group.copy(status = RideGroupStatus.OPEN))
                 rideIntentRepository.save(rideIntentToCancel.copy(status = RideIntentStatus.CANCELLED))
                 return true
             }
@@ -213,24 +218,15 @@ class RideIntentService(
     }
 
     @Transactional
-    fun getGroups(id: UUID): Result<Boolean> {
-        val rideIntentToCancel = rideIntentRepository.findByIdAndStatus(id,RideIntentStatus.ACTIVE)
-        val groupMember = rideGroupMemberRepository.deleteByRideIntentId(id)
-        val wasGroupMember = groupMember != null
-        if(wasGroupMember){
-            val groupId = groupMember.id!!
-            val membersLeftInGroup = rideGroupMemberRepository.findAllByRideGroupId(groupId)
-            if(membersLeftInGroup.size<2) {
-                //Delete group along with member if the is only one member left
-                rideGroupMemberRepository.deleteAll(membersLeftInGroup)
-                rideGroupRepository.deleteById(groupId)
-            }
-        }
-        rideIntentRepository.save(
-            rideIntentToCancel.copy(
-                status = RideIntentStatus.CANCELLED
-            )
-        )
-        return Result.success(true)
+    fun getGroupsByUser(userId: UUID): List<RideGroup> {
+        val rideGroups =
+            rideIntentRepository.findAllByUserId(userId)
+                .map {
+                    rideGroupMemberRepository.findByRideIntentId(it.id!!)
+                }.map {
+                    rideGroupRepository.findRideGroupsBy(it!!.rideGroupId)
+                }
+
+        return rideGroups
     }
 }
