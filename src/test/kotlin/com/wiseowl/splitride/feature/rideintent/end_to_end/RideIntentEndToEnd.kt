@@ -198,4 +198,6 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient, @Autowir
                 assert(response?.data?.members?.any { it.rideIntentId.toString()==createdRideIntent2?.id }==true)
             }
     }
+
+
 }

@@ -197,18 +197,8 @@ class RideIntentService(
                 val deletedMember = rideGroupMemberRepository.deleteByRideIntentId(rideIntentId) //Exit Ride Group by deleting Ride Group Member
                 val group = rideGroupRepository.findRideGroupsBy(deletedMember.rideGroupId) //Exit Ride Group by deleting Ride Group Member
                 val numberOfMembersLeftInTheGroup = rideGroupMemberRepository.countByRideGroupId(deletedMember.rideGroupId)
-                rideGroupRepository.save(
-                    when (numberOfMembersLeftInTheGroup) {
-                        0 -> group.copy(status = RideGroupStatus.CANCELLED)
-                        group.maxSize -> group.copy(status = RideGroupStatus.FULL)
-                        else -> group.copy(status = RideGroupStatus.OPEN)
-                    }
-                )
-                if(numberOfMembersLeftInTheGroup < 2){
-                    //Cancel group
-                    rideGroupRepository.deleteById(deletedMember.rideGroupId)
-                } else rideGroupRepository.save(group.copy(status = RideGroupStatus.OPEN))
-                rideIntentRepository.save(rideIntentToCancel.copy(status = RideIntentStatus.CANCELLED))
+                if (numberOfMembersLeftInTheGroup<1) rideGroupRepository.save(group.copy(status = RideGroupStatus.CANCELLED))
+                else rideGroupRepository.save(group.copy(status = RideGroupStatus.OPEN))
                 return true
             }
             RideIntentStatus.CANCELLED -> throw IllegalArgumentException("RideIntent has already been cancelled")
