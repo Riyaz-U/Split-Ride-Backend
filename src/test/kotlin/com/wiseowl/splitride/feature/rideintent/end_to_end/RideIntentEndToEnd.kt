@@ -66,7 +66,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
                 assert(response?.data?.flexibleMinutes == request.flexibleMinutes)
                 assert(parse(response?.data?.startTime) == parse(request.startTime))
             }
-    };
+    }
 
     @Test
     fun createRideIntentWithInvalidSartTimeReturnBadRequest() {
