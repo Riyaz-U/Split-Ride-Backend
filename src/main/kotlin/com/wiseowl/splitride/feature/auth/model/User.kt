@@ -1,6 +1,7 @@
-package com.wiseowl.splitride.feature.user.model
+package com.wiseowl.splitride.feature.auth.model
 
 import jakarta.persistence.*
+import org.hibernate.validator.constraints.Range
 import java.time.Instant
 import java.util.*
 
@@ -24,14 +25,9 @@ data class User(
     @Column(nullable = false)
     val passwordHash: String,
 
+    @Range(min = 0, max = 5)
     @Column(nullable = true)
-    val company: String? = null,
-
-    @Column(nullable = true)
-    val homeArea: String? = null,
-
-    @Column(nullable = true)
-    val officeArea: String? = null,
+    val rating: Double? = null,
 
     @Column(nullable = false)
     val createdAt: Instant = Instant.now()
