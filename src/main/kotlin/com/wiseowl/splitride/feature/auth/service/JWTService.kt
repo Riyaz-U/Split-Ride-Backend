@@ -1,9 +1,11 @@
 package com.wiseowl.splitride.feature.auth.service
 
+import com.wiseowl.splitride.feature.auth.model.JwtClaims
 import com.wiseowl.splitride.feature.auth.model.JwtTokenResult
 import com.wiseowl.splitride.feature.auth.model.RefreshToken
 import com.wiseowl.splitride.feature.auth.model.User
 import com.wiseowl.splitride.feature.auth.repository.RefreshTokenRepository
+import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
@@ -66,7 +68,7 @@ class JWTService(
 
     private fun generateAccessToken(user: User): String {
         return Jwts.builder()
-            .subject(user.email)
+            .subject(user.id.toString())
             .claims(parseClaims(user))
             .expiration(Date(System.currentTimeMillis() + accessTokenExpirationSeconds))
             .signWith(getKey())
@@ -75,14 +77,17 @@ class JWTService(
 
 
 
-    fun validateToken(token: String): Boolean {
-        return runCatching {
-            Jwts
+    fun parseAndValidate(token: String): JwtClaims {
+        val claims = Jwts
                 .parser()
                 .verifyWith(getKey())
                 .build()
                 .parseSignedClaims(token)
-        }.getOrNull()!=null
+            .payload
+
+        return JwtClaims(
+            userId = claims.subject
+        )
     }
 
     private fun parseClaims(user: User): MutableMap<String, Any> {

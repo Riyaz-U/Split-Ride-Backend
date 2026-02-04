@@ -1,16 +1,21 @@
 package com.wiseowl.splitride.feature.auth
 
+import com.wiseowl.splitride.feature.auth.dto.AuthenticationResponseDTO
 import com.wiseowl.splitride.feature.auth.dto.LoginRequestDTO
 import com.wiseowl.splitride.feature.auth.dto.RegisterRequestDTO
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.TestRestTemplate
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
+import org.springframework.test.web.servlet.client.expectBody
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @AutoConfigureRestTestClient
 class AuthenticationTest(@Autowired val restTemplate: RestTestClient) {
 
@@ -83,7 +88,21 @@ class AuthenticationTest(@Autowired val restTemplate: RestTestClient) {
                     email = email,
                     password = password
                 )
-            ).exchange()
-            .expectStatus().isOk
+            )
+            .exchange()
+            .expectBody<AuthenticationResponseDTO>()
+            .value {
+                assertNotNull(it?.accessToken)
+                assertNotNull(it.refreshToken)
+                assert(it.accessTokenExpirationSec>100)
+            }
+    }
+
+    @Test
+    fun unAuthenticatedUserCannotAccessAuthenticatedRoute(){
+        restTemplate.get()
+            .uri("/")
+            .exchange()
+            .expectStatus().isForbidden
     }
 }
