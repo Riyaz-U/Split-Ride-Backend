@@ -43,9 +43,8 @@ class AuthService(
         val user = userRepository.findByEmail(req.email)
             ?: throw BadCredentialsException("Email or Password is incorrect")
 
-        if (!encoder.matches(req.password, user.passwordHash)) {
-            throw BadCredentialsException("Email or Password is incorrect")
-        }
+        val isPasswordCorrect = !encoder.matches(req.password, user.passwordHash)
+        if(isPasswordCorrect) throw BadCredentialsException("Email or Password is incorrect")
 
         val token = jwtService.generateToken(user)
 
