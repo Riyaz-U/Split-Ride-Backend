@@ -50,7 +50,7 @@ class AuthService(
 
         val response = AuthenticationResponseDTO(
             accessToken = token.accessToken,
-            accessTokenExpirationSec = token.accessTokenExpiresInSec,
+            accessTokenExpirationSec =1, //token.accessTokenExpiresInSec,
             refreshToken = token.refreshToken
         )
 
