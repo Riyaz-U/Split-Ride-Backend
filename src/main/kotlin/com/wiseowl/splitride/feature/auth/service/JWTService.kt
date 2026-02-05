@@ -17,19 +17,17 @@ import javax.crypto.SecretKey
 
 @Service
 class JWTService(
-    private val refreshTokenRepository: RefreshTokenRepository
+    private val refreshTokenRepository: RefreshTokenRepository,
+    private val hasher: TokenHasher
 ) {
-   @Value("\${jwt.secret}")
-   private lateinit var secret: String
-
-    private val encoder = BCryptPasswordEncoder()
+   private var key: SecretKey = Jwts.SIG.HS256.key().build()
 
     private val refreshTokenExpirationSeconds: Long = 60*60*24*30
     private val accessTokenExpirationSeconds: Long  = 60*15
 
     fun generateToken(user: User): JwtTokenResult {
-        val refreshToken = "generateRefreshToken(user)"
-        val accessToken = "generateAccessToken(user)"
+        val refreshToken = generateRefreshToken(user)
+        val accessToken = generateAccessToken(user)
 
         return JwtTokenResult(
             accessToken = accessToken,
@@ -45,14 +43,13 @@ class JWTService(
 
     private fun generateRefreshToken(user: User): String {
         val refreshTokenString = Jwts.builder()
-            .subject(user.email)
-            .claims(parseClaims(user))
-            .expiration(Date(System.currentTimeMillis() + refreshTokenExpirationSeconds))
-            .signWith(getKey())
-            .compact()
+                .subject(user.email)
+                .claims(parseClaims(user))
+                .expiration(Date(System.currentTimeMillis() + refreshTokenExpirationSeconds))
+                .signWith(key)
+                .compact()
 
-
-        val hashedRefreshToken = encoder.encode(refreshTokenString).toString()
+        val hashedRefreshToken = hasher.encode(refreshTokenString)
 
         refreshTokenRepository.save(
             RefreshToken(
@@ -71,7 +68,7 @@ class JWTService(
             .subject(user.id.toString())
             .claims(parseClaims(user))
             .expiration(Date(System.currentTimeMillis() + accessTokenExpirationSeconds))
-            .signWith(getKey())
+            .signWith(key)
             .compact()
     }
 
@@ -80,7 +77,7 @@ class JWTService(
     fun parseAndValidate(token: String): JwtClaims {
         val claims = Jwts
                 .parser()
-                .verifyWith(getKey())
+                .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
             .payload
@@ -95,9 +92,5 @@ class JWTService(
             "first_name" to user.firstName,
             "last_name" to user.lastName
         )
-    }
-
-    private fun getKey(): SecretKey{
-        return Keys.hmacShaKeyFor(secret.toByteArray())
     }
 }
