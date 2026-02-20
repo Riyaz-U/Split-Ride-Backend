@@ -1,0 +1,1 @@
+POST http://localhost:8080/api/ride-intents/ed549e0d-0b5e-4cb9-b530-7fd15c97c0b4/cancel?userId=48b7ee6d-8f7c-4056-89c3-85557237bc21

@@ -1,0 +1,2 @@
+### GET request to example server
+GET http://localhost:8080/api/ride-intents/search?direction=HOME_TO_OFFICE&sourceLat=28.68417015878079&sourceLng=77.1278630984236&destinationLat=28.683243907360648&destinationLng=77.1353011909352&sourceArea=DLFCyberHub&destinationArea=Tech&time=2026-01-13T14:12:45.123456Z

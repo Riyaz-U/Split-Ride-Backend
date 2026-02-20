@@ -1,0 +1,2 @@
+### GET request to example server
+GET http://localhost:8080/api/ride-intents/9a5d0689-6203-44d4-b2da-3ea7d85ce5eb
