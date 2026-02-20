@@ -4,12 +4,15 @@ import com.wiseowl.splitride.feature.auth.dto.AuthenticationResponseDTO
 import com.wiseowl.splitride.feature.auth.dto.LoginRequestDTO
 import com.wiseowl.splitride.feature.auth.dto.RegisterRequestDTO
 import com.wiseowl.splitride.feature.auth.repository.UserRepository
+import com.wiseowl.splitride.feature.response.SplitRideResponse
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.Rollback
 import org.springframework.test.web.servlet.MockMvc
@@ -17,6 +20,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.expectBody
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.Test
+import kotlin.test.assertFails
 import kotlin.test.assertNotNull
 
 @SpringBootTest
@@ -44,7 +48,11 @@ class AuthenticationTest(@Autowired val restTemplate: RestTestClient, @Autowired
                     password = "somepassword"
                 )
             ).exchange()
-            .expectStatus().isCreated
+            .expectBody<SplitRideResponse<Unit>>()
+            .value { result ->
+                assertNotNull(result)
+                assert(result.status == HttpStatus.CREATED.value())
+            }
     }
 
     @Test
@@ -72,7 +80,12 @@ class AuthenticationTest(@Autowired val restTemplate: RestTestClient, @Autowired
                     password = "somepassword1"
                 )
             ).exchange()
-            .expectStatus().is5xxServerError
+            .expectBody<SplitRideResponse<Unit>>()
+            .value { result ->
+                assertNotNull(result)
+                assertFalse(result.success)
+                assert(result.status == HttpStatus.BAD_REQUEST.value())
+            }
     }
 
     @Test
@@ -140,11 +153,11 @@ class AuthenticationTest(@Autowired val restTemplate: RestTestClient, @Autowired
             )
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
-            .expectBody<AuthenticationResponseDTO>()
+            .expectBody<SplitRideResponse<AuthenticationResponseDTO>>()
             .returnResult()
             .responseBody
 
-        val accessToken = loginResponse?.accessToken
+        val accessToken = loginResponse?.data?.accessToken
 
         restTemplate.get()
             .uri("/")

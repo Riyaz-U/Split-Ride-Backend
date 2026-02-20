@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
-
     @ExceptionHandler(IllegalArgumentException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleNotFound(ex: IllegalArgumentException): SplitRideResponse<Any>? {
@@ -21,6 +20,7 @@ class GlobalExceptionHandler {
             status = HttpStatus.BAD_REQUEST.value(),
         )
     }
+
     @ExceptionHandler(BadCredentialsException::class)
     fun badCredentialsException(
         ex: Exception?
