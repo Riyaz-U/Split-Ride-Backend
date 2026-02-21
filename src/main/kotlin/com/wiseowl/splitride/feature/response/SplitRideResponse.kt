@@ -9,24 +9,22 @@ data class SplitRideResponse<T>(
     companion object{
         fun <T> createSuccessResponse(
             data: T?,
-            status: Int,
-            success: Boolean = true,
+            status: Int
         ): SplitRideResponse<T> {
             return SplitRideResponse(
-                success = success,
+                success = true,
                 status = status,
                 data = data,
                 errorMessage = null
             )
         }
 
-        fun createErrorResponse(
+        fun <T> createErrorResponse(
             errorMessage: String,
             status: Int,
-            success: Boolean = false,
-        ): SplitRideResponse<Any> {
-            return SplitRideResponse(
-                success = success,
+        ): SplitRideResponse<T> {
+            return SplitRideResponse<T>(
+                success = false,
                 status = status,
                 data = null,
                 errorMessage = errorMessage
