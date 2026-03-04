@@ -9,15 +9,15 @@ import java.time.Instant
 
 @Service
 class RideGroupStatusUpdateJob(
-    val repository: RideGroupRepository
+    val rideGroupRepository: RideGroupRepository,
 ) {
     @Scheduled(cron = "0 * * * * *")
     fun updateExpiredGroup() {
         val now = Instant.now()
-        val activeRideGroups = repository.findAllByStartTimeBucketBeforeAndStatusIn(now, listOf(RideGroupStatus.FULL, RideGroupStatus.OPEN))
+        val activeRideGroups = rideGroupRepository.findAllByStartTimeBucketBeforeAndStatusIn(now, listOf(RideGroupStatus.FULL, RideGroupStatus.OPEN))
         val updatedRideGroups = activeRideGroups.map { it.copy(
             status = if(it.status == RideGroupStatus.FULL) RideGroupStatus.COMPLETED else RideGroupStatus.CANCELLED
         ) }
-        repository.saveAll(updatedRideGroups)
+        rideGroupRepository.saveAll(updatedRideGroups)
     }
 }

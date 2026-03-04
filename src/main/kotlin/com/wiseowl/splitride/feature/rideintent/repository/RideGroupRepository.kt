@@ -23,4 +23,5 @@ interface RideGroupRepository: JpaRepository<RideGroup, UUID>{
     fun findRideGroupsBy(id: UUID): RideGroup
 
     fun findAllByStatusOrderByStartTimeBucketAsc(status: RideGroupStatus): List<RideGroup>
+    fun findAllByStatus(status: RideGroupStatus): List<RideGroup>
 }
