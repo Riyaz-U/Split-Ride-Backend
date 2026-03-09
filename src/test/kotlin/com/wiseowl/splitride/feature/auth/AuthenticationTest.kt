@@ -15,12 +15,10 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.annotation.Rollback
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.expectBody
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.Test
-import kotlin.test.assertFails
 import kotlin.test.assertNotNull
 
 @SpringBootTest
@@ -157,11 +155,11 @@ class AuthenticationTest(@Autowired val restTemplate: RestTestClient, @Autowired
             .returnResult()
             .responseBody
 
-        val accessToken = loginResponse?.data?.accessToken
+        val accessToken = loginResponse?.data?.accessToken!!
 
         restTemplate.get()
             .uri("/")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+            .headers { it.setBearerAuth(accessToken) }
             .exchange()
             .expectStatus().isNotFound
     }

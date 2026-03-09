@@ -7,5 +7,5 @@ import java.util.UUID
 
 @Repository
 interface CommuteRepository: JpaRepository<Commute, UUID> {
-    fun findAllByUserId(userId: UUID): List<Commute>
+//    fun findAllByUserId(userId: UUID): List<Commute>
 }

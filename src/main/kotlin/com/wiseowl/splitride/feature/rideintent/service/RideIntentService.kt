@@ -42,7 +42,11 @@ class RideIntentService(
     private val timerBucket: TimerBucket,
 ) {
 
-    fun create(req: CreateRideIntentRequestDTO): RideIntent {
+    fun create(
+        userId: String,
+        req: CreateRideIntentRequestDTO
+    ): RideIntent {
+        print("init")
         val startTime = Instant.parse(req.startTime)
         val startTimeHasPassed = startTime.isBefore(Instant.now())
         if(startTimeHasPassed) throw IllegalArgumentException("Invalid start time")
@@ -52,7 +56,7 @@ class RideIntentService(
         val sourceKeyword = keywordExtractor.extractKeywords(normalizedSource).joinToString(",")
         val destinationKeyword = keywordExtractor.extractKeywords(normalizedDestination).joinToString(",")
         val intent = RideIntent(
-            userId = UUID.fromString(req.userId),
+            userId = UUID.fromString(userId),
             direction = req.direction,
             sourceArea = req.sourceArea,
             destinationArea = req.destinationArea,
@@ -184,8 +188,8 @@ class RideIntentService(
     }
 
     @Transactional
-    fun cancelRideIntent(rideIntentId: UUID, userId: UUID): Boolean{
-        val rideIntentToCancel = rideIntentRepository.findByIdAndUserId(rideIntentId, userId)
+    fun cancelRideIntent(rideIntentId: UUID, userId: String): Boolean{
+        val rideIntentToCancel = rideIntentRepository.findByIdAndUserId(rideIntentId, UUID.fromString(userId))
             ?: throw IllegalArgumentException("RideIntent not found")
 
         when(rideIntentToCancel.status){
@@ -208,9 +212,9 @@ class RideIntentService(
     }
 
     @Transactional
-    fun getGroupsByUser(userId: UUID): List<RideGroup> {
+    fun getGroupsByUser(userId: String): List<RideGroup> {
         val rideGroups =
-            rideIntentRepository.findAllByUserId(userId)
+            rideIntentRepository.findAllByUserId(UUID.fromString(userId))
                 .map {
                     rideGroupMemberRepository.findByRideIntentId(it.id!!)
                 }.map {

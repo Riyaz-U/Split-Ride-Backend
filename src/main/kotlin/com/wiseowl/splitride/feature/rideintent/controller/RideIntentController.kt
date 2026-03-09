@@ -1,5 +1,6 @@
 package com.wiseowl.splitride.feature.rideintent.controller
 
+import com.wiseowl.splitride.config.model.AuthenticatedUser
 import com.wiseowl.splitride.feature.response.SplitRideResponse
 import com.wiseowl.splitride.feature.response.SplitRideResponse.Companion.createSuccessResponse
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
@@ -8,6 +9,7 @@ import com.wiseowl.splitride.feature.rideintent.dto.toDTO
 import com.wiseowl.splitride.feature.rideintent.model.Direction
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -22,11 +24,12 @@ import java.util.UUID
 class RideIntentController(private val service: RideIntentService) {
 
     @PostMapping
-    fun create(@RequestBody body: CreateRideIntentRequestDTO): SplitRideResponse<RideIntentResponseDTO>{
+    fun create(@RequestBody body: CreateRideIntentRequestDTO, @AuthenticationPrincipal user: AuthenticatedUser): SplitRideResponse<RideIntentResponseDTO>{
         val response = createSuccessResponse(
-            data = service.create(body).toDTO(),
+            data = service.create(user.userId, body).toDTO(),
             status = HttpStatus.CREATED.value()
         )
+        print(response)
         return response
     }
 
@@ -69,9 +72,9 @@ class RideIntentController(private val service: RideIntentService) {
     @PostMapping("/{id}/cancel")
     fun cancelRideIntent(
         @PathVariable id: UUID,
-        @RequestParam userId: UUID //TODO: Remove when authentication is completed
+        @AuthenticationPrincipal user: AuthenticatedUser //TODO: Remove when authentication is completed
     ): SplitRideResponse<Unit>{
-        service.cancelRideIntent(id, userId)
+        service.cancelRideIntent(id, user.userId)
         return createSuccessResponse(null, HttpStatus.OK.value())
     }
 }

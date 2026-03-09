@@ -1,5 +1,6 @@
 package com.wiseowl.splitride.feature.rideintent.controller
 
+import com.wiseowl.splitride.config.model.AuthenticatedUser
 import com.wiseowl.splitride.feature.response.SplitRideResponse
 import com.wiseowl.splitride.feature.response.SplitRideResponse.Companion.createSuccessResponse
 import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
@@ -8,6 +9,7 @@ import com.wiseowl.splitride.feature.rideintent.model.RideGroup
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
 import org.springframework.data.repository.query.Param
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -37,9 +39,9 @@ class RideGroupController(private val service: RideIntentService) {
 
     @PostMapping("/user/all")
     fun getGroupsByUser(
-        @RequestParam userId: UUID //TODO: Remove when authentication is completed
+        @AuthenticationPrincipal user: AuthenticatedUser
     ): SplitRideResponse<List<RideGroup>>{
-        val groups = service.getGroupsByUser(userId)
+        val groups = service.getGroupsByUser(user.userId)
         return createSuccessResponse(groups, HttpStatus.OK.value())
     }
 
