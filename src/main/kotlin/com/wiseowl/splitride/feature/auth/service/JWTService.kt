@@ -5,11 +5,7 @@ import com.wiseowl.splitride.feature.auth.model.JwtTokenResult
 import com.wiseowl.splitride.feature.auth.model.RefreshToken
 import com.wiseowl.splitride.feature.auth.model.User
 import com.wiseowl.splitride.feature.auth.repository.RefreshTokenRepository
-import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.security.Keys
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.Date
@@ -22,8 +18,8 @@ class JWTService(
 ) {
    private var key: SecretKey = Jwts.SIG.HS256.key().build()
 
-    private val refreshTokenExpirationSeconds: Long = 60*60*24*30
-    private val accessTokenExpirationSeconds: Long  = 60*15
+    private val refreshTokenExpirationMilliSeconds: Long = 1000*60*60*24*30
+    private val accessTokenExpirationMilliSeconds: Long  = 1000*60*60
 
     fun generateToken(user: User): JwtTokenResult {
         val refreshToken = generateRefreshToken(user)
@@ -31,7 +27,7 @@ class JWTService(
 
         return JwtTokenResult(
             accessToken = accessToken,
-            accessTokenExpiresInSec = accessTokenExpirationSeconds,
+            accessTokenExpiresInSec = accessTokenExpirationMilliSeconds,
             refreshToken = refreshToken
         )
     }
@@ -45,7 +41,7 @@ class JWTService(
         val refreshTokenString = Jwts.builder()
                 .subject(user.email)
                 .claims(parseClaims(user))
-                .expiration(Date(System.currentTimeMillis() + refreshTokenExpirationSeconds))
+                .expiration(Date(System.currentTimeMillis() + refreshTokenExpirationMilliSeconds))
                 .signWith(key)
                 .compact()
 
@@ -55,7 +51,7 @@ class JWTService(
             RefreshToken(
                 user = user,
                 tokenHash = hashedRefreshToken,
-                expiresAt = Instant.now().plusSeconds(refreshTokenExpirationSeconds),
+                expiresAt = Instant.now().plusSeconds(refreshTokenExpirationMilliSeconds),
                 revoked = false,
                 replacedByTokenCreatedAt = Instant.now()
             )
@@ -67,7 +63,7 @@ class JWTService(
         return Jwts.builder()
             .subject(user.id.toString())
             .claims(parseClaims(user))
-            .expiration(Date(System.currentTimeMillis() + accessTokenExpirationSeconds))
+            .expiration(Date(System.currentTimeMillis() + accessTokenExpirationMilliSeconds))
             .signWith(key)
             .compact()
     }

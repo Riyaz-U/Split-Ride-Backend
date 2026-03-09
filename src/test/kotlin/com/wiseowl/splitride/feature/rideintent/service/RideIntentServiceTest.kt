@@ -25,6 +25,7 @@
     @ExtendWith(MockitoExtension::class)
     class RideIntentServiceTest {
 
+
         val keywordExtractor = KeywordExtractor()
         val areaNormalizer = AreaNormalizer()
         val keywordMatcher = KeywordMatcher(areaNormalizer, keywordExtractor)
@@ -43,7 +44,6 @@
         val destinationLat = 28.6225
         val destinationLng = 77.2210
         private val createRideIntentDTO: CreateRideIntentRequestDTO = CreateRideIntentRequestDTO(
-            "48b7ee6d-8f7c-4056-89c3-85557237bce4",
             Direction.HOME_TO_OFFICE,
             sourceArea,
             destinationArea,
@@ -61,7 +61,7 @@
         val destinationKeywords = setOf("cyber", "pk")
 
         val rideIntent = RideIntent(
-            userId = UUID.fromString(createRideIntentDTO.userId),
+            userId = UUID.randomUUID(),
             direction = Direction.HOME_TO_OFFICE,
             sourceArea = sourceArea,
             destinationArea = destinationArea,
@@ -95,8 +95,9 @@
 
         @Test
         fun `create ride intent`() {
+            val userId = "16918286-89c0-459a-92e5-8955f1b2c2bb"
             given(repo.save(any())).willReturn(rideIntent)
-            service.create(createRideIntentDTO)
+            service.create(userId, createRideIntentDTO)
             val result = service.search(
                 Direction.HOME_TO_OFFICE,
                 sourceArea = sourceArea,
