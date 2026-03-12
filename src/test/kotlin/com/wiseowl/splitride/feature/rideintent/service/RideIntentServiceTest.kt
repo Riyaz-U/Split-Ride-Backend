@@ -98,7 +98,7 @@
             val userId = "16918286-89c0-459a-92e5-8955f1b2c2bb"
             given(repo.save(any())).willReturn(rideIntent)
             service.create(userId, createRideIntentDTO)
-            val result = service.search(
+            val result = service.scheduleSearch(
                 Direction.HOME_TO_OFFICE,
                 sourceArea = sourceArea,
                 destinationArea = destinationArea,
@@ -114,7 +114,7 @@
 
         @Test
         fun `search ride intent with no matching return empty`() {
-            val result = service.search(
+            val result = service.scheduleSearch(
                 Direction.OFFICE_TO_HOME,
                 sourceArea,
                 destinationArea,
@@ -129,7 +129,7 @@
 
         @Test
         fun `search ride intent with matching return ride intent`() {
-            val result = service.search(
+            val result = service.scheduleSearch(
                 Direction.HOME_TO_OFFICE,
                 sourceArea = sourceArea,
                 destinationArea = destinationArea,

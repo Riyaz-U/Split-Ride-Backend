@@ -22,22 +22,6 @@ data class RideIntent(
     val userId: UUID,
 
     @Column(nullable = false)
-    @Enumerated(jakarta.persistence.EnumType.STRING)
-    val direction: Direction,
-
-    @Column(nullable = false)
-    val sourceArea: String,
-
-    @Column(nullable = false)
-    val destinationArea: String,
-
-    @Column(nullable = false)
-    val normalizedSource: String,
-
-    @Column(nullable = false)
-    val normalizedDestination: String,
-
-    @Column(nullable = false)
     val sourceLat: Double,
 
     @Column(nullable = false)
@@ -50,16 +34,10 @@ data class RideIntent(
     val destinationLng: Double,
 
     @Column(nullable = false)
-    val sourceKeywords: String,
-
-    @Column(nullable = false)
-    val destinationKeywords: String,
-
-    @Column(nullable = false)
-    val startTime: Instant,
-
-    @Column(nullable = false)
     val flexibleMinutes: Int,
+
+    @Column(nullable = false)
+    val scheduleType: ScheduleType,
 
     @Column(nullable = false)
     @Enumerated(jakarta.persistence.EnumType.STRING)
@@ -71,24 +49,20 @@ data class RideIntent(
     protected constructor() : this(
         id = null,
         userId = UUID(0,0),
-        direction = Direction.HOME_TO_OFFICE,
-        sourceArea = "",
-        destinationArea = "",
-        normalizedSource = "",
-        normalizedDestination = "",
         sourceLat = 0.0,
         sourceLng = 0.0,
         destinationLat = 0.0,
         destinationLng = 0.0,
-        sourceKeywords = "",
-        destinationKeywords = "",
-        startTime = Instant.EPOCH,
+        scheduleType = ScheduleType.Immediate,
         flexibleMinutes = 0,
         status = RideIntentStatus.ACTIVE,
         createdAt = Instant.EPOCH
     )
 }
 
-enum class Direction { HOME_TO_OFFICE, OFFICE_TO_HOME }
-
 enum class RideIntentStatus { ACTIVE, GROUPED, CANCELLED, EXPIRED, COMPLETED }
+
+sealed interface ScheduleType{
+    object Immediate: ScheduleType
+    data class Future(val startTime: String): ScheduleType
+}

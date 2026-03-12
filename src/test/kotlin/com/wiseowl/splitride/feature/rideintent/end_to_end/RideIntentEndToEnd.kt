@@ -39,7 +39,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
         destinationLng = 78.124413,
         sourceArea = "DLFCyberHub",
         destinationArea = "TechPark",
-        startTime = "2027-02-28T22:14:45.000Z",
+        scheduleType = "2027-02-28T22:14:45.000Z",
         flexibleMinutes = 10
     )
 
@@ -57,7 +57,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
             destinationLng = 78.124413,
             sourceArea = "DLFCyberHub",
             destinationArea = "TechPark",
-            startTime = Instant.now().plusSeconds(1000*60*15).toString(),
+            scheduleType = Instant.now().plusSeconds(1000*60*15).toString(),
             flexibleMinutes = 10
         )
 
@@ -70,7 +70,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
                 assert(response?.data?.direction == request.direction)
                 assert(response?.data?.status == RideIntentStatus.ACTIVE)
                 assert(response?.data?.flexibleMinutes == request.flexibleMinutes)
-                assert(parse(response?.data?.startTime) == parse(request.startTime))
+                assert(parse(response?.data?.startTime) == parse(request.scheduleType))
             }
     }
 
@@ -82,7 +82,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
             .body(
                 createRideIntentRequestBody
                     .copy(
-                        startTime = Instant.now().minusSeconds(60 * 15).toString(),
+                        scheduleType = Instant.now().minusSeconds(60 * 15).toString(),
                     )
             )
             .exchangeAuthorized()
@@ -119,7 +119,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
                 assert(response?.data?.direction == createRideIntentRequestBody.direction)
                 assert(response?.data?.status == RideIntentStatus.ACTIVE)
                 assert(response?.data?.flexibleMinutes == createRideIntentRequestBody.flexibleMinutes)
-                assert(parse(response?.data?.startTime) == parse(createRideIntentRequestBody.startTime))
+                assert(parse(response?.data?.startTime) == parse(createRideIntentRequestBody.scheduleType))
             }.returnResult().responseBody?.data
 
         restTestClient.post()
@@ -353,7 +353,7 @@ class RideIntentEndToEnd(@Autowired val restTestClient: RestTestClient) {
     @Test
     fun groupIntentRejectsRejoin() {
         val rideIntentBody = createRideIntentRequestBody.copy(
-            startTime = Instant.now().plusSeconds(10).toString()
+            scheduleType = Instant.now().plusSeconds(10).toString()
         )
         val createdRideIntent1 = restTestClient.post().uri("/api/ride-intents")
             .contentType(MediaType.APPLICATION_JSON)

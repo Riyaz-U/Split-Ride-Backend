@@ -7,26 +7,24 @@ import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO.Companion.toRid
 import com.wiseowl.splitride.feature.rideintent.dto.RideGroupMemberDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.toDTO
-import com.wiseowl.splitride.feature.rideintent.model.Direction
 import com.wiseowl.splitride.feature.rideintent.model.RideGroup
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupMember
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupStatus
 import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
+import com.wiseowl.splitride.feature.rideintent.model.ScheduleType
 import com.wiseowl.splitride.feature.rideintent.repository.RideGroupMemberRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
-import com.wiseowl.splitride.feature.rideintent.util.AreaNormalizer
 import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
-import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
-import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
 import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
 import jakarta.transaction.Transactional
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
-import kotlin.math.min
 
 private const val MATCH_BOUND_DISTANCE_KM = 0.5
 
@@ -35,78 +33,50 @@ class RideIntentService(
     private val rideIntentRepository: RideIntentRepository,
     private val rideGroupRepository: RideGroupRepository,
     private val rideGroupMemberRepository: RideGroupMemberRepository,
-    private val areaNormalizer: AreaNormalizer,
-    private val keywordExtractor: KeywordExtractor,
-    private val keywordMatcher: KeywordMatcher,
     private val geoCalculator: GeoCalculator,
     private val timerBucket: TimerBucket,
+    private val taskScheduler: TaskScheduler
 ) {
-
     fun create(
         userId: String,
         req: CreateRideIntentRequestDTO
     ): RideIntent {
-        print("init")
-        val startTime = Instant.parse(req.startTime)
-        val startTimeHasPassed = startTime.isBefore(Instant.now())
-        if(startTimeHasPassed) throw IllegalArgumentException("Invalid start time")
+        if(req.scheduleType is ScheduleType.Future){
+            val startTime = Instant.parse(req.scheduleType.startTime)
+            val startTimeHasPassed = startTime.isBefore(Instant.now())
+            if(startTimeHasPassed) throw IllegalArgumentException("Invalid start time")
+        }
 
-        val normalizedSource = areaNormalizer.normalize(req.sourceArea)
-        val normalizedDestination = areaNormalizer.normalize(req.destinationArea)
-        val sourceKeyword = keywordExtractor.extractKeywords(normalizedSource).joinToString(",")
-        val destinationKeyword = keywordExtractor.extractKeywords(normalizedDestination).joinToString(",")
         val intent = RideIntent(
             userId = UUID.fromString(userId),
-            direction = req.direction,
-            sourceArea = req.sourceArea,
-            destinationArea = req.destinationArea,
-            normalizedSource = normalizedSource,
-            normalizedDestination = normalizedDestination,
             sourceLat = req.sourceLat,
             sourceLng = req.sourceLng,
             destinationLat = req.destinationLat,
             destinationLng = req.destinationLng,
-            sourceKeywords = sourceKeyword,
-            destinationKeywords = destinationKeyword,
-            startTime = startTime,
+            scheduleType = req.scheduleType,
             flexibleMinutes = req.flexibleMinutes
         )
+
         return rideIntentRepository.save(intent)
     }
 
-    fun search(
-        direction: Direction,
-        sourceArea: String,
-        destinationArea: String,
-        sourceLat: Double,
-        sourceLng: Double,
-        destinationLat: Double,
-        destinationLng: Double,
-        time: String
-    ): List<RideIntent> {
-        val normSource = areaNormalizer.normalize(sourceArea)
-        val normDest = areaNormalizer.normalize(destinationArea)
-        val requestedTime = Instant.parse(time)
+    fun scheduleSearch(
+        rideIntentId: UUID
+    ) {
+        val rideIntent = rideIntentRepository.findById(rideIntentId).getOrNull() ?: throw IllegalArgumentException("RideIntent not found")
 
-        return rideIntentRepository.findAllByDirection(direction)
+        return rideIntentRepository.findAll()
             .filter {
-                val sourceAreaScore = keywordMatcher.getScore(normSource, it.sourceKeywords.split(",").toSet())
-                val destinationAreaScore = keywordMatcher.getScore(normDest, it.destinationKeywords.split(",").toSet())
-                val isSourceWithinBound = geoCalculator.distanceInKm(sourceLat, sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
-                val isDestinationWithinBound = geoCalculator.distanceInKm(destinationLat, destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
-                val storedAngle = geoCalculator.angle(it.sourceLat, it.sourceLng, it.destinationLat, it.destinationLng)
-                val inputAngle = geoCalculator.angle(sourceLat, sourceLng, destinationLat, destinationLng)
+                val isSourceWithinBound = geoCalculator.distanceInKm(rideIntent.sourceLat, rideIntent.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
+                val isDestinationWithinBound = geoCalculator.distanceInKm(rideIntent.destinationLat, rideIntent.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
                 val isActive = it.status == RideIntentStatus.ACTIVE
-                val rawDiff = abs(storedAngle - inputAngle)
-                val angleDeviation = min(rawDiff, 360 - rawDiff)
-                val directionAligned = angleDeviation <= 30
-
+                when(rideIntent.scheduleType) {
+                    ScheduleType.Immediate ->
+                    is ScheduleType.Future ->
+                }
                 isActive &&
-                        sourceAreaScore >= 0.4f &&
-                        destinationAreaScore >= 0.4f &&
                         isSourceWithinBound &&
                         isDestinationWithinBound &&
-                        directionAligned &&
                         abs(it.startTime.epochSecond - requestedTime.epochSecond) <= it.flexibleMinutes * 60
             }
     }

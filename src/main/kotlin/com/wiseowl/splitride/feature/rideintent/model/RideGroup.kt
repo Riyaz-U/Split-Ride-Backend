@@ -18,9 +18,6 @@ data class RideGroup(
     val id: UUID? = null,
 
     @Column(nullable = false)
-    val direction: Direction,
-
-    @Column(nullable = false)
     val sourceLat: Double,
 
     @Column(nullable = false)
@@ -33,7 +30,7 @@ data class RideGroup(
     val destinationLng: Double,
 
     @Column(nullable = false)
-    val startTimeBucket: Instant,
+    val scheduleType: ScheduleType,
 
     @Column(nullable = false)
     val maxSize: Int = 3,
@@ -45,12 +42,11 @@ data class RideGroup(
     val status: RideGroupStatus = RideGroupStatus.OPEN
 ){
     constructor(): this(
-        direction = Direction.HOME_TO_OFFICE,
         sourceLat = 0.0,
         sourceLng = 0.0,
         destinationLat = 0.0,
         destinationLng = 0.0,
-        startTimeBucket = Instant.now(),
+        scheduleType = ScheduleType.Immediate,
         maxSize = 3,
         createdAt = Instant.now()
     )

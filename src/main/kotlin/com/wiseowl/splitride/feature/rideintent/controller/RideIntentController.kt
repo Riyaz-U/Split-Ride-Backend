@@ -6,7 +6,6 @@ import com.wiseowl.splitride.feature.response.SplitRideResponse.Companion.create
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.toDTO
-import com.wiseowl.splitride.feature.rideintent.model.Direction
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -24,7 +23,10 @@ import java.util.UUID
 class RideIntentController(private val service: RideIntentService) {
 
     @PostMapping
-    fun create(@RequestBody body: CreateRideIntentRequestDTO, @AuthenticationPrincipal user: AuthenticatedUser): SplitRideResponse<RideIntentResponseDTO>{
+    fun create(
+        @RequestBody body: CreateRideIntentRequestDTO,
+        @AuthenticationPrincipal user: AuthenticatedUser
+    ): SplitRideResponse<RideIntentResponseDTO>{
         val response = createSuccessResponse(
             data = service.create(user.userId, body).toDTO(),
             status = HttpStatus.CREATED.value()
@@ -35,27 +37,12 @@ class RideIntentController(private val service: RideIntentService) {
 
     @GetMapping("/search")
     fun search(
-        @RequestParam direction: Direction,
-        @RequestParam sourceArea: String,
-        @RequestParam destinationArea: String,
-        @RequestParam sourceLat: Double,
-        @RequestParam sourceLng: Double,
-        @RequestParam destinationLat: Double,
-        @RequestParam destinationLng: Double,
-        @RequestParam time: String
-    ): SplitRideResponse<List<RideIntentResponseDTO>> {
+        @RequestParam rideIntentId: UUID
+    ): SplitRideResponse<Unit> {
+        service.scheduleSearch(rideIntentId)
         val response = createSuccessResponse(
-            data = service.search(
-                direction,
-                sourceArea,
-                destinationArea,
-                sourceLat,
-                sourceLng,
-                destinationLat,
-                destinationLng,
-                time
-            ).map { it.toDTO() },
-            status = HttpStatus.OK.value()
+            data = Unit,
+            status = HttpStatus.PROCESSING.value()
         )
         return response
     }

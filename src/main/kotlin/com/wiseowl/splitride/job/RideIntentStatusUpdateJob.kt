@@ -2,6 +2,7 @@ package com.wiseowl.splitride.job
 
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
+import com.wiseowl.splitride.feature.rideintent.repository.RideSearchProcessRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.Instant
