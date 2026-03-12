@@ -17,7 +17,7 @@ data class RideSearchProcess(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     val rideIntentId: UUID,
 
     @Column(nullable = false)

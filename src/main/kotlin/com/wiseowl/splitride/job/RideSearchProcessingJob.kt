@@ -63,6 +63,7 @@ class RideSearchProcessingJob(
                                     status = if(isFull) RideGroupStatus.FULL else RideGroupStatus.OPEN,
                                 )
                             ) //TODO("Notify user that they have joined a group")
+                            rideSearchProcessRepository.save(process.copy(status = RideSearchProcessState.Grouped(foundMatchingGroup.id)))
                         } else{
                             val searchingRideSearchProcesses = rideSearchProcessRepository.findAllByStatusAndIdNotLike(RideSearchProcessState.Searching, process.id!!)
                             val matchingRideSearchProcesses = searchingRideSearchProcesses.firstOrNull { process ->
@@ -100,6 +101,7 @@ class RideSearchProcessingJob(
                                 rideIntentId = matchingRideSearchProcesses?.id!!
                             )
                             rideGroupMemberRepository.saveAll(listOf(member1, member2))
+                            rideSearchProcessRepository.save(process.copy(status = RideSearchProcessState.Grouped(rideGroupId)))
                         }
 
                     },

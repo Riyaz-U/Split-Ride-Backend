@@ -12,10 +12,13 @@ import com.wiseowl.splitride.feature.rideintent.model.RideGroupMember
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupStatus
 import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
+import com.wiseowl.splitride.feature.rideintent.model.RideSearchProcess
+import com.wiseowl.splitride.feature.rideintent.model.RideSearchProcessState
 import com.wiseowl.splitride.feature.rideintent.model.ScheduleType
 import com.wiseowl.splitride.feature.rideintent.repository.RideGroupMemberRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
+import com.wiseowl.splitride.feature.rideintent.repository.RideSearchProcessRepository
 import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
 import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
 import jakarta.transaction.Transactional
@@ -23,6 +26,7 @@ import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
+import kotlin.jvm.optionals.getOrElse
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 
@@ -33,6 +37,7 @@ class RideIntentService(
     private val rideIntentRepository: RideIntentRepository,
     private val rideGroupRepository: RideGroupRepository,
     private val rideGroupMemberRepository: RideGroupMemberRepository,
+    private val rideSearchProcessRepository: RideSearchProcessRepository,
     private val geoCalculator: GeoCalculator,
     private val timerBucket: TimerBucket,
     private val taskScheduler: TaskScheduler
@@ -62,23 +67,17 @@ class RideIntentService(
 
     fun scheduleSearch(
         rideIntentId: UUID
-    ) {
-        val rideIntent = rideIntentRepository.findById(rideIntentId).getOrNull() ?: throw IllegalArgumentException("RideIntent not found")
+    ): UUID {
+        val searchProcess = RideSearchProcess(rideIntentId = rideIntentId)
+        val searchProcessId = rideSearchProcessRepository.save(searchProcess).id!!
+        return searchProcessId
+    }
 
-        return rideIntentRepository.findAll()
-            .filter {
-                val isSourceWithinBound = geoCalculator.distanceInKm(rideIntent.sourceLat, rideIntent.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
-                val isDestinationWithinBound = geoCalculator.distanceInKm(rideIntent.destinationLat, rideIntent.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
-                val isActive = it.status == RideIntentStatus.ACTIVE
-                when(rideIntent.scheduleType) {
-                    ScheduleType.Immediate ->
-                    is ScheduleType.Future ->
-                }
-                isActive &&
-                        isSourceWithinBound &&
-                        isDestinationWithinBound &&
-                        abs(it.startTime.epochSecond - requestedTime.epochSecond) <= it.flexibleMinutes * 60
-            }
+    fun searchStatus(
+        rideSearchId: UUID
+    ): RideSearchProcessState {
+        val searchProcess = rideSearchProcessRepository.findById(rideSearchId).getOrElse { throw Exception("Unable to find search process") }
+        return searchProcess.status
     }
 
     fun getRideGroup(id: UUID): RideGroupDTO{

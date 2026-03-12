@@ -5,7 +5,10 @@ import com.wiseowl.splitride.feature.response.SplitRideResponse
 import com.wiseowl.splitride.feature.response.SplitRideResponse.Companion.createSuccessResponse
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
+import com.wiseowl.splitride.feature.rideintent.dto.ScheduleSearchResponse
+import com.wiseowl.splitride.feature.rideintent.dto.SearchStatusResponse
 import com.wiseowl.splitride.feature.rideintent.dto.toDTO
+import com.wiseowl.splitride.feature.rideintent.model.RideSearchProcess
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -31,18 +34,29 @@ class RideIntentController(private val service: RideIntentService) {
             data = service.create(user.userId, body).toDTO(),
             status = HttpStatus.CREATED.value()
         )
-        print(response)
         return response
     }
 
-    @GetMapping("/search")
-    fun search(
+    @GetMapping("/search/schedule")
+    fun scheduleSearch(
         @RequestParam rideIntentId: UUID
-    ): SplitRideResponse<Unit> {
-        service.scheduleSearch(rideIntentId)
+    ): SplitRideResponse<ScheduleSearchResponse> {
+        val searchProcessId = service.scheduleSearch(rideIntentId)
         val response = createSuccessResponse(
-            data = Unit,
+            data = ScheduleSearchResponse(searchProcessId),
             status = HttpStatus.PROCESSING.value()
+        )
+        return response
+    }
+
+    @GetMapping("/search/status")
+    fun searchStatus(
+        @RequestParam searchProcessId: UUID
+    ): SplitRideResponse<SearchStatusResponse> {
+        val status = service.searchStatus(searchProcessId)
+        val response = createSuccessResponse(
+            data = SearchStatusResponse(status),
+            status = HttpStatus.OK.value()
         )
         return response
     }
