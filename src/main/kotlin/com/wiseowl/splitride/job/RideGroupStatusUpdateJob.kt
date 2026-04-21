@@ -1,6 +1,10 @@
 package com.wiseowl.splitride.job
 
+import com.wiseowl.splitride.config.Configuration
+import com.wiseowl.splitride.config.Configuration.ScheduleTypeImmediateExpirationSeconds
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupStatus
+import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
+import com.wiseowl.splitride.feature.rideintent.model.ScheduleType
 import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -12,12 +16,11 @@ class RideGroupStatusUpdateJob(
     val rideGroupRepository: RideGroupRepository,
 ) {
     @Scheduled(cron = "0 * * * * *")
-    fun updateExpiredGroup() {
+    fun deleteOldGroup() {
         val now = Instant.now()
-        val activeRideGroups = rideGroupRepository.findAllByStartTimeBucketBeforeAndStatusIn(now, listOf(RideGroupStatus.FULL, RideGroupStatus.OPEN))
-        val updatedRideGroups = activeRideGroups.map { it.copy(
-            status = if(it.status == RideGroupStatus.FULL) RideGroupStatus.COMPLETED else RideGroupStatus.CANCELLED
-        ) }
-        rideGroupRepository.saveAll(updatedRideGroups)
+        val expiredGroups = rideGroupRepository.findAllByStatusIn(listOf(RideGroupStatus.COMPLETED, RideGroupStatus.CANCELLED)).filter {
+            Configuration.RideGroupExpirationSeconds > now.epochSecond - it.createdAt.epochSecond
+        }
+        rideGroupRepository.deleteAll(expiredGroups)
     }
 }

@@ -22,12 +22,12 @@ import java.util.UUID
 @RequestMapping("/api/ride-groups")
 class RideGroupController(private val service: RideIntentService) {
 
-    @PostMapping("/join")
-    fun joinGroup(
-        @RequestParam rideIntentId: UUID
-    ): JoinGroupResponseDTO {
-        return service.joinGroup(rideIntentId)
-    }
+//    @PostMapping("/join")
+//    fun joinGroup(
+//        @RequestParam rideIntentId: UUID
+//    ): JoinGroupResponseDTO {
+//        return service.joinGroup(rideIntentId)
+//    }
 
     @GetMapping("/info/{id}")
     fun getGroup(

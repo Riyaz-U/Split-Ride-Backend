@@ -33,7 +33,7 @@ class RideSearchProcessingJob(
     fun scheduleSearch() {
         val idleRideSearchProcesses = rideSearchProcessRepository.findAllByStatus(RideSearchProcessState.Idle)
         idleRideSearchProcesses.forEach { process ->
-            val rideIntent = rideIntentRepository.findById(process.id).getOrNull()
+            val rideIntent = rideIntentRepository.findById(process.id!!).getOrNull()
             if(rideIntent == null) {
                 //TODO("Log it! Should not happen")
                 rideSearchProcessRepository.delete(process)

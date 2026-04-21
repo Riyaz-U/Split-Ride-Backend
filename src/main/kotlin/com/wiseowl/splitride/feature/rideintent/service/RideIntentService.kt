@@ -39,8 +39,6 @@ class RideIntentService(
     private val rideGroupMemberRepository: RideGroupMemberRepository,
     private val rideSearchProcessRepository: RideSearchProcessRepository,
     private val geoCalculator: GeoCalculator,
-    private val timerBucket: TimerBucket,
-    private val taskScheduler: TaskScheduler
 ) {
     fun create(
         userId: String,
@@ -81,7 +79,7 @@ class RideIntentService(
     }
 
     fun getRideGroup(id: UUID): RideGroupDTO{
-        val rideGroup = rideGroupRepository.findRideGroupsBy(id) ?: throw IllegalArgumentException("No ride group found with id $id")
+        val rideGroup = rideGroupRepository.findById(id).getOrNull() ?: throw IllegalArgumentException("No ride group found with id $id")
         val membersInGroup = rideGroupMemberRepository.findAllByRideGroupId(id)
         return rideGroup.toRideGroupDTO(membersInGroup)
     }
@@ -92,69 +90,69 @@ class RideIntentService(
     }
 
     fun getNearbyActiveGroups(latitude: Double, longitude: Double, radiusInMeters: Long): List<RideGroup>{
-        val nearbyGroup = rideGroupRepository.findAllByStatusOrderByStartTimeBucketAsc(RideGroupStatus.OPEN)
+        val nearbyGroup = rideGroupRepository.findAllByStatus(RideGroupStatus.OPEN)
             .filter {
                 geoCalculator.distanceInKm(latitude, longitude, it.sourceLat, it.sourceLng) <= radiusInMeters
             }
         return nearbyGroup
     }
 
-    @Transactional
-    fun joinGroup(
-        rideIntentId: UUID
-    ): JoinGroupResponseDTO {
-        val rideIntent = rideIntentRepository.findByIdAndStatus(rideIntentId, RideIntentStatus.ACTIVE)
-            ?: throw IllegalArgumentException("RideIntent not found")
-
-        val availableGroup = rideGroupRepository.findByDirectionAndStartTimeBucket(
-            rideIntent.direction,
-            timerBucket.get(rideIntent.startTime)
-        ).firstOrNull {
-            val isSourceWithinBound = geoCalculator.distanceInKm(rideIntent.sourceLat, rideIntent.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
-            val isDestinationWithinBound = geoCalculator.distanceInKm(rideIntent.destinationLat, rideIntent.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
-            val isOpen = it.status == RideGroupStatus.OPEN
-            isSourceWithinBound && isDestinationWithinBound && isOpen
-        }
-        val updatedGroup: RideGroup = availableGroup ?: RideGroup(
-            direction = rideIntent.direction,
-            sourceLat = rideIntent.sourceLat,
-            sourceLng = rideIntent.sourceLng,
-            destinationLat = rideIntent.destinationLat,
-            destinationLng = rideIntent.destinationLng,
-            startTimeBucket = timerBucket.get(rideIntent.startTime)
-        )
-
-        val createdRideGroup = rideGroupRepository.save(updatedGroup)
-
-        val rideGroupMember = rideGroupMemberRepository
-            .findByRideGroupIdAndRideIntentId(
-                createdRideGroup.id!!
-                , rideIntent.id!!
-            )
-        val alreadyJoined = rideGroupMember!=null
-
-        if (!alreadyJoined) {
-            val newMember = RideGroupMember(rideGroupId = createdRideGroup.id, rideIntentId = rideIntent.id)
-            rideGroupMemberRepository.save(newMember)
-            rideIntentRepository.save(rideIntent.copy(status = RideIntentStatus.GROUPED))
-        }
-
-        val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(createdRideGroup.id)
-        val isGroupFull = rideGroupMemberRepository.countByRideGroupId(createdRideGroup.id) >= updatedGroup.maxSize
-        if(isGroupFull){
-            rideGroupRepository.save(
-                createdRideGroup.copy(
-                    status = RideGroupStatus.FULL
-                )
-            )
-        }
-
-        return JoinGroupResponseDTO(
-            rideGroupId = createdRideGroup.id,
-            currentMembers = allMemberForGroup.map { RideGroupMemberDTO(it.id, it.rideIntentId, it.joinedAt) },
-            isGroupFull = isGroupFull
-        )
-    }
+//    @Transactional
+//    fun joinGroup(
+//        rideGroupId: UUID
+//    ): JoinGroupResponseDTO {
+//        val rideIntent = rideIntentRepository.findByIdAndStatus(rideIntentId, RideIntentStatus.ACTIVE)
+//            ?: throw IllegalArgumentException("RideIntent not found")
+//
+//        val availableGroup = rideGroupRepository.findByDirectionAndStartTimeBucket(
+//            rideIntent.direction,
+//            timerBucket.get(rideIntent.startTime)
+//        ).firstOrNull {
+//            val isSourceWithinBound = geoCalculator.distanceInKm(rideIntent.sourceLat, rideIntent.sourceLng, it.sourceLat, it.sourceLng) < MATCH_BOUND_DISTANCE_KM
+//            val isDestinationWithinBound = geoCalculator.distanceInKm(rideIntent.destinationLat, rideIntent.destinationLng, it.destinationLat, it.destinationLng) < MATCH_BOUND_DISTANCE_KM
+//            val isOpen = it.status == RideGroupStatus.OPEN
+//            isSourceWithinBound && isDestinationWithinBound && isOpen
+//        }
+//        val updatedGroup: RideGroup = availableGroup ?: RideGroup(
+//            direction = rideIntent.direction,
+//            sourceLat = rideIntent.sourceLat,
+//            sourceLng = rideIntent.sourceLng,
+//            destinationLat = rideIntent.destinationLat,
+//            destinationLng = rideIntent.destinationLng,
+//            startTimeBucket = timerBucket.get(rideIntent.startTime)
+//        )
+//
+//        val createdRideGroup = rideGroupRepository.save(updatedGroup)
+//
+//        val rideGroupMember = rideGroupMemberRepository
+//            .findByRideGroupIdAndRideIntentId(
+//                createdRideGroup.id!!
+//                , rideIntent.id!!
+//            )
+//        val alreadyJoined = rideGroupMember!=null
+//
+//        if (!alreadyJoined) {
+//            val newMember = RideGroupMember(rideGroupId = createdRideGroup.id, rideIntentId = rideIntent.id)
+//            rideGroupMemberRepository.save(newMember)
+//            rideIntentRepository.save(rideIntent.copy(status = RideIntentStatus.GROUPED))
+//        }
+//
+//        val allMemberForGroup = rideGroupMemberRepository.findAllByRideGroupId(createdRideGroup.id)
+//        val isGroupFull = rideGroupMemberRepository.countByRideGroupId(createdRideGroup.id) >= updatedGroup.maxSize
+//        if(isGroupFull){
+//            rideGroupRepository.save(
+//                createdRideGroup.copy(
+//                    status = RideGroupStatus.FULL
+//                )
+//            )
+//        }
+//
+//        return JoinGroupResponseDTO(
+//            rideGroupId = createdRideGroup.id,
+//            currentMembers = allMemberForGroup.map { RideGroupMemberDTO(it.id, it.rideIntentId, it.joinedAt) },
+//            isGroupFull = isGroupFull
+//        )
+//    }
 
     @Transactional
     fun cancelRideIntent(rideIntentId: UUID, userId: String): Boolean{
@@ -164,11 +162,12 @@ class RideIntentService(
         when(rideIntentToCancel.status){
             RideIntentStatus.ACTIVE -> {
                 rideIntentRepository.save(rideIntentToCancel.copy(status = RideIntentStatus.CANCELLED))
+                rideGroupMemberRepository.deleteByRideIntentId(rideIntentId)
                 return true
             }
             RideIntentStatus.GROUPED -> {
                 val deletedMember = rideGroupMemberRepository.deleteByRideIntentId(rideIntentId) //Exit Ride Group by deleting Ride Group Member
-                val group = rideGroupRepository.findRideGroupsBy(deletedMember.rideGroupId) //Exit Ride Group by deleting Ride Group Member
+                val group = rideGroupRepository.findById(deletedMember.rideGroupId).get() //Exit Ride Group by deleting Ride Group Member
                 val numberOfMembersLeftInTheGroup = rideGroupMemberRepository.countByRideGroupId(deletedMember.rideGroupId)
                 if (numberOfMembersLeftInTheGroup<1) rideGroupRepository.save(group.copy(status = RideGroupStatus.CANCELLED))
                 else rideGroupRepository.save(group.copy(status = RideGroupStatus.OPEN))
@@ -187,7 +186,7 @@ class RideIntentService(
                 .map {
                     rideGroupMemberRepository.findByRideIntentId(it.id!!)
                 }.map {
-                    rideGroupRepository.findRideGroupsBy(it!!.rideGroupId)
+                    rideGroupRepository.findById(it!!.rideGroupId).get()
                 }
 
         return rideGroups

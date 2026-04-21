@@ -1,7 +1,9 @@
 package com.wiseowl.splitride.feature.rideintent.model
 
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -37,10 +39,11 @@ data class RideIntent(
     val flexibleMinutes: Int,
 
     @Column(nullable = false)
+    @Convert(converter = ScheduleTypeConverter::class)
     val scheduleType: ScheduleType,
 
     @Column(nullable = false)
-    @Enumerated(jakarta.persistence.EnumType.STRING)
+    @Enumerated(EnumType.STRING)
     val status: RideIntentStatus = RideIntentStatus.ACTIVE,
 
     @Column(nullable = false)
@@ -61,8 +64,3 @@ data class RideIntent(
 }
 
 enum class RideIntentStatus { ACTIVE, GROUPED, CANCELLED, EXPIRED, COMPLETED }
-
-sealed interface ScheduleType{
-    object Immediate: ScheduleType
-    data class Future(val startTime: String): ScheduleType
-}

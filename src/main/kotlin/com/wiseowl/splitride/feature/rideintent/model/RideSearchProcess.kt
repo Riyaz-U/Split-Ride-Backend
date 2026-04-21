@@ -1,6 +1,7 @@
 package com.wiseowl.splitride.feature.rideintent.model
 
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -21,11 +22,6 @@ data class RideSearchProcess(
     val rideIntentId: UUID,
 
     @Column(nullable = false)
+    @Convert(converter = RideSearchProcessStateConverter::class)
     val status: RideSearchProcessState = RideSearchProcessState.Idle
 )
-
-sealed class RideSearchProcessState{
-    object Idle : RideSearchProcessState()
-    object Searching : RideSearchProcessState()
-    data class Grouped(val groupId: UUID) : RideSearchProcessState()
-}

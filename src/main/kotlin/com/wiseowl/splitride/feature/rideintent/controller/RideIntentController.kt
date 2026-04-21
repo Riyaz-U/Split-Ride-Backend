@@ -25,7 +25,7 @@ import java.util.UUID
 @RequestMapping("/api/ride-intents")
 class RideIntentController(private val service: RideIntentService) {
 
-    @PostMapping
+    @PostMapping("create")
     fun create(
         @RequestBody body: CreateRideIntentRequestDTO,
         @AuthenticationPrincipal user: AuthenticatedUser

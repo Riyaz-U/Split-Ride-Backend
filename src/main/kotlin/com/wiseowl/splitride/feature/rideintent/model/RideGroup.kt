@@ -1,6 +1,7 @@
 package com.wiseowl.splitride.feature.rideintent.model
 
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -30,6 +31,7 @@ data class RideGroup(
     val destinationLng: Double,
 
     @Column(nullable = false)
+    @Convert(converter = ScheduleTypeConverter::class)
     val scheduleType: ScheduleType,
 
     @Column(nullable = false)

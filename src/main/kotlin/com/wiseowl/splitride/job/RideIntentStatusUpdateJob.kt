@@ -1,5 +1,7 @@
 package com.wiseowl.splitride.job
 
+import com.wiseowl.splitride.config.Configuration
+import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideSearchProcessRepository
@@ -15,7 +17,12 @@ class RideIntentStatusUpdateJob(
     @Scheduled(cron = "0 * * * * *")
     fun updateExpiredIntent() {
         val now = Instant.now()
-        val activeRideIntent = repository.findAllByStartTimeBeforeAndStatusIs(now, RideIntentStatus.ACTIVE)
-        repository.saveAll(activeRideIntent.filter { it.startTime.plusSeconds(it.flexibleMinutes*60L) <= now }.map { it.copy(status = RideIntentStatus.EXPIRED) })
+        val logicallyExpiredIntents = repository.findAll()
+            .filter {
+                it.status != RideIntentStatus.ACTIVE &&
+                        it.status != RideIntentStatus.GROUPED &&
+                        Configuration.ScheduleTypeImmediateExpirationSeconds > now.epochSecond - it.createdAt.epochSecond
+            }
+        repository.deleteAll(logicallyExpiredIntents)
     }
 }

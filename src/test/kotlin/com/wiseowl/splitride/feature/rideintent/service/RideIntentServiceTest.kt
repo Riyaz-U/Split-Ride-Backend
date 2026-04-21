@@ -1,17 +1,13 @@
     package com.wiseowl.splitride.feature.rideintent.service
 
     import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
-    import com.wiseowl.splitride.feature.rideintent.model.Direction
     import com.wiseowl.splitride.feature.rideintent.model.RideIntent
+    import com.wiseowl.splitride.feature.rideintent.model.ScheduleType
     import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
-    import com.wiseowl.splitride.feature.rideintent.util.AreaNormalizer
     import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
-    import com.wiseowl.splitride.feature.rideintent.util.KeywordExtractor
-    import com.wiseowl.splitride.feature.rideintent.util.KeywordMatcher
-    import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
     import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
     import com.wiseowl.splitride.feature.rideintent.repository.RideGroupMemberRepository
-    import org.junit.jupiter.api.Assertions.assertTrue
+    import com.wiseowl.splitride.feature.rideintent.repository.RideSearchProcessRepository
     import org.mockito.Mock
     import org.junit.jupiter.api.BeforeEach
     import org.junit.jupiter.api.extension.ExtendWith
@@ -26,54 +22,34 @@
     class RideIntentServiceTest {
 
 
-        val keywordExtractor = KeywordExtractor()
-        val areaNormalizer = AreaNormalizer()
-        val keywordMatcher = KeywordMatcher(areaNormalizer, keywordExtractor)
         val geoDistanceCalculator = GeoCalculator()
-        val timerBucket = TimerBucket()
 
         @Mock lateinit var repo: RideIntentRepository
         @Mock lateinit var rideGroupRepository: RideGroupRepository
+        @Mock lateinit var rideSearchProcessRepository: RideSearchProcessRepository
         @Mock lateinit var rideGroupMemberRepository: RideGroupMemberRepository
         lateinit var service: RideIntentService
 
-        val sourceArea = "cyber city"
-        val destinationArea = "cyber park"
         val sourceLat = 28.6315
         val sourceLng = 77.2090
         val destinationLat = 28.6225
         val destinationLng = 77.2210
         private val createRideIntentDTO: CreateRideIntentRequestDTO = CreateRideIntentRequestDTO(
-            Direction.HOME_TO_OFFICE,
-            sourceArea,
-            destinationArea,
             sourceLat = sourceLat,
             sourceLng = sourceLng,
             destinationLat = destinationLat,
             destinationLng = destinationLng,
-            Instant.now().plusSeconds(100).toString(),
+            ScheduleType.Future(Instant.now().plusSeconds(100).toString()),
             10
         )
-        val normalizedSource = "cybercity"
-        val normalizedDestination = "cyber pk"
-
-        val sourceKeywords = setOf("cyber", "city")
-        val destinationKeywords = setOf("cyber", "pk")
 
         val rideIntent = RideIntent(
             userId = UUID.randomUUID(),
-            direction = Direction.HOME_TO_OFFICE,
-            sourceArea = sourceArea,
-            destinationArea = destinationArea,
-            normalizedSource = normalizedSource,
-            normalizedDestination = normalizedDestination,
             sourceLat = sourceLat,
             sourceLng = sourceLng,
             destinationLat = destinationLat,
             destinationLng = destinationLng,
-            sourceKeywords = sourceKeywords.joinToString(","),
-            destinationKeywords = destinationKeywords.joinToString(","),
-            startTime = Instant.now(),
+            scheduleType = ScheduleType.Future(Instant.now().plusSeconds(100).toString()),
             flexibleMinutes = 10
         )
 
@@ -83,63 +59,20 @@
                 repo,
                 rideGroupRepository,
                 rideGroupMemberRepository,
-                areaNormalizer,
-                keywordExtractor,
-                keywordMatcher,
-                geoDistanceCalculator,
-                timerBucket
+                rideSearchProcessRepository,
+                geoDistanceCalculator
             )
-            given(repo.findAllByDirection(any()))
-                .willReturn(listOf(rideIntent))
+            given(repo.findByIdAndStatus(any(), any()))
+                .willReturn(rideIntent)
         }
 
         @Test
         fun `create ride intent`() {
             val userId = "16918286-89c0-459a-92e5-8955f1b2c2bb"
             given(repo.save(any())).willReturn(rideIntent)
-            service.create(userId, createRideIntentDTO)
-            val result = service.scheduleSearch(
-                Direction.HOME_TO_OFFICE,
-                sourceArea = sourceArea,
-                destinationArea = destinationArea,
-                sourceLat = sourceLat,
-                sourceLng = sourceLng,
-                destinationLat = destinationLat,
-                destinationLng = destinationLng,
-                time = Instant.now().toString()
-            )
+            val rideIntentId = service.create(userId, createRideIntentDTO).id
+            val searchProcessId = service.scheduleSearch(rideIntentId!!)
 
-            kotlin.test.assertEquals(1, result.size)
-        }
-
-        @Test
-        fun `search ride intent with no matching return empty`() {
-            val result = service.scheduleSearch(
-                Direction.OFFICE_TO_HOME,
-                sourceArea,
-                destinationArea,
-                sourceLat+0.1,
-                sourceLng+0.1,
-                destinationLat,
-                destinationLng,
-                Instant.now().toString()
-            )
-            assertTrue(result.isEmpty())
-        }
-
-        @Test
-        fun `search ride intent with matching return ride intent`() {
-            val result = service.scheduleSearch(
-                Direction.HOME_TO_OFFICE,
-                sourceArea = sourceArea,
-                destinationArea = destinationArea,
-                sourceLat,
-                sourceLng,
-                destinationLat,
-                destinationLng,
-                Instant.now().toString()
-            )
-
-            assertTrue(result.isNotEmpty())
+            kotlin.test.assertNotNull(searchProcessId)
         }
     }
