@@ -7,8 +7,6 @@ import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.ScheduleSearchResponse
 import com.wiseowl.splitride.feature.rideintent.dto.SearchStatusResponse
-import com.wiseowl.splitride.feature.rideintent.dto.toDTO
-import com.wiseowl.splitride.feature.rideintent.model.RideSearchProcess
 import com.wiseowl.splitride.feature.rideintent.service.RideIntentService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -25,23 +23,13 @@ import java.util.UUID
 @RequestMapping("/api/ride-intents")
 class RideIntentController(private val service: RideIntentService) {
 
-    @PostMapping("create")
-    fun create(
+    @PostMapping("/schedule/search")
+    fun scheduleIntentSearch(
         @RequestBody body: CreateRideIntentRequestDTO,
         @AuthenticationPrincipal user: AuthenticatedUser
-    ): SplitRideResponse<RideIntentResponseDTO>{
-        val response = createSuccessResponse(
-            data = service.create(user.userId, body).toDTO(),
-            status = HttpStatus.CREATED.value()
-        )
-        return response
-    }
-
-    @GetMapping("/search/schedule")
-    fun scheduleSearch(
-        @RequestParam rideIntentId: UUID
     ): SplitRideResponse<ScheduleSearchResponse> {
-        val searchProcessId = service.scheduleSearch(rideIntentId)
+        val intentId = service.createIntent(user.userId, body).id
+        val searchProcessId = service.scheduleSearch(intentId!!)
         val response = createSuccessResponse(
             data = ScheduleSearchResponse(searchProcessId),
             status = HttpStatus.PROCESSING.value()

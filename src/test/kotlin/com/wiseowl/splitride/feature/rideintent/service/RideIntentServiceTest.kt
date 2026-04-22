@@ -70,7 +70,7 @@
         fun `create ride intent`() {
             val userId = "16918286-89c0-459a-92e5-8955f1b2c2bb"
             given(repo.save(any())).willReturn(rideIntent)
-            val rideIntentId = service.create(userId, createRideIntentDTO).id
+            val rideIntentId = service.createIntent(userId, createRideIntentDTO).id
             val searchProcessId = service.scheduleSearch(rideIntentId!!)
 
             kotlin.test.assertNotNull(searchProcessId)

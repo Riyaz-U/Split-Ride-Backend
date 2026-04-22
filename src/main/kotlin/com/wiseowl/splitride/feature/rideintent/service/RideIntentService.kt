@@ -1,14 +1,11 @@
 package com.wiseowl.splitride.feature.rideintent.service
 
 import com.wiseowl.splitride.feature.rideintent.dto.CreateRideIntentRequestDTO
-import com.wiseowl.splitride.feature.rideintent.dto.JoinGroupResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideGroupDTO.Companion.toRideGroupDTO
-import com.wiseowl.splitride.feature.rideintent.dto.RideGroupMemberDTO
 import com.wiseowl.splitride.feature.rideintent.dto.RideIntentResponseDTO
 import com.wiseowl.splitride.feature.rideintent.dto.toDTO
 import com.wiseowl.splitride.feature.rideintent.model.RideGroup
-import com.wiseowl.splitride.feature.rideintent.model.RideGroupMember
 import com.wiseowl.splitride.feature.rideintent.model.RideGroupStatus
 import com.wiseowl.splitride.feature.rideintent.model.RideIntent
 import com.wiseowl.splitride.feature.rideintent.model.RideIntentStatus
@@ -20,15 +17,12 @@ import com.wiseowl.splitride.feature.rideintent.repository.RideGroupRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideIntentRepository
 import com.wiseowl.splitride.feature.rideintent.repository.RideSearchProcessRepository
 import com.wiseowl.splitride.feature.rideintent.util.GeoCalculator
-import com.wiseowl.splitride.feature.rideintent.util.TimerBucket
 import jakarta.transaction.Transactional
-import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
 import kotlin.jvm.optionals.getOrElse
 import kotlin.jvm.optionals.getOrNull
-import kotlin.math.abs
 
 private const val MATCH_BOUND_DISTANCE_KM = 0.5
 
@@ -40,7 +34,7 @@ class RideIntentService(
     private val rideSearchProcessRepository: RideSearchProcessRepository,
     private val geoCalculator: GeoCalculator,
 ) {
-    fun create(
+    fun createIntent(
         userId: String,
         req: CreateRideIntentRequestDTO
     ): RideIntent {
