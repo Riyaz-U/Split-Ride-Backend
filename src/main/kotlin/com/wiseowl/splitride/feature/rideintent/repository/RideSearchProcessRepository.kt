@@ -7,5 +7,5 @@ import java.util.UUID
 
 interface RideSearchProcessRepository: JpaRepository<RideSearchProcess, UUID>  {
     fun findAllByStatus(status: RideSearchProcessState): List<RideSearchProcess>
-    fun findAllByStatusAndIdNotLike(status: RideSearchProcessState, id: UUID): List<RideSearchProcess>
+    fun findAllByStatusInAndIdNotLike(status: List<RideSearchProcessState>, id: UUID): List<RideSearchProcess>
 }
